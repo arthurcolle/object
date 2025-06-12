@@ -91,7 +91,7 @@ defmodule PerformanceRegressionTest do
         },
         %{
           operation: :complex_state_update,
-          iterations: @benchmark_iterations / 2,
+          iterations: div(@benchmark_iterations, 2),
           expected_time_per_op: 0.5  # 0.5ms
         },
         %{
@@ -101,7 +101,7 @@ defmodule PerformanceRegressionTest do
         },
         %{
           operation: :concurrent_updates,
-          iterations: @benchmark_iterations / 4,
+          iterations: div(@benchmark_iterations, 4),
           concurrency_level: 10,
           expected_time_per_op: 0.3  # 0.3ms
         }
@@ -453,7 +453,7 @@ defmodule PerformanceRegressionTest do
       # Test performance trend analysis
       trend_analysis = analyze_performance_trends(historical_benchmarks)
       
-      assert trend_analysis.performance_trend != :declining,
+      refute trend_analysis.performance_trend == :declining,
         "Performance trend should not be declining"
       
       assert trend_analysis.stability_score > 0.8,

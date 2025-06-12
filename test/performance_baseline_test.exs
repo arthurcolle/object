@@ -28,13 +28,13 @@ defmodule Object.PerformanceBaselineTest do
             id: "perf_test_#{i}",
             state: %{value: 0},
             methods: %{
-              increment: fn state, _msg -> %{state | value: state.value + 1} end
+              increment: fn object, _msg -> %{object | state: %{object.state | value: object.state.value + 1}} end
             }
           )
           
           case Server.start_link(object) do
             {:ok, pid} ->
-              Process.exit(pid, :kill)
+              GenServer.stop(pid, :normal, 100)
               acc + 1
             _ ->
               acc
@@ -63,7 +63,7 @@ defmodule Object.PerformanceBaselineTest do
             peers: []
           },
           methods: %{
-            update: fn state, val -> %{state | value: val} end
+            update: fn object, val -> %{object | state: %{object.state | value: val}} end
           }
         )
         {:ok, pid} = Server.start_link(object)
@@ -78,7 +78,7 @@ defmodule Object.PerformanceBaselineTest do
       memory_per_object = memory_used / length(objects)
       
       # Cleanup
-      Enum.each(objects, &Process.exit(&1, :kill))
+      Enum.each(objects, &GenServer.stop(&1, :normal, 100))
       
       assert memory_per_object <= @performance_thresholds.memory_per_object,
         "Memory per object #{round(memory_per_object)} bytes exceeds threshold #{@performance_thresholds.memory_per_object} bytes"
@@ -94,7 +94,7 @@ defmodule Object.PerformanceBaselineTest do
         id: "receiver",
         state: %{count: 0},
         methods: %{
-          increment: fn state, _msg -> %{state | count: state.count + 1} end
+          increment: fn object, _msg -> %{object | state: %{object.state | count: object.state.count + 1}} end
         }
       )
       {:ok, receiver_pid} = Server.start_link(receiver)
@@ -107,8 +107,8 @@ defmodule Object.PerformanceBaselineTest do
       {:ok, sender_pid} = Server.start_link(sender)
       
       on_exit(fn ->
-        Process.exit(receiver_pid, :kill)
-        Process.exit(sender_pid, :kill)
+        GenServer.stop(receiver_pid, :normal, 100)
+        GenServer.stop(sender_pid, :normal, 100)
       end)
       
       {:ok, %{receiver: receiver_pid, sender: sender_pid}}
@@ -117,7 +117,7 @@ defmodule Object.PerformanceBaselineTest do
     test "local message throughput meets baseline", %{receiver: receiver_pid} do
       message_count = 50_000
       
-      {time_micros, :ok} = :timer.tc(fn ->
+      {time_micros, _state} = :timer.tc(fn ->
         Enum.each(1..message_count, fn _ ->
           GenServer.cast(receiver_pid, {:increment, 1})
         end)
@@ -146,9 +146,9 @@ defmodule Object.PerformanceBaselineTest do
           id: "latency_test",
           state: %{},
           methods: %{
-            ping: fn state, {from, ref} ->
+            ping: fn object, {from, ref} ->
               send(from, {:pong, ref})
-              state
+              object
             end
           }
         )
@@ -159,11 +159,11 @@ defmodule Object.PerformanceBaselineTest do
         receive do
           {:pong, ^ref} ->
             end_time = System.monotonic_time(:microsecond)
-            Process.exit(pid, :kill)
+            GenServer.stop(pid, :normal, 100)
             (end_time - start_time) / 1000  # Convert to milliseconds
         after
           1000 -> 
-            Process.exit(pid, :kill)
+            GenServer.stop(pid, :normal, 100)
             1000.0
         end
       end)
@@ -188,23 +188,21 @@ defmodule Object.PerformanceBaselineTest do
           id: "coalition_#{i}",
           state: %{value: i},
           methods: %{
-            collaborate: fn state, _msg -> state end
+            collaborate: fn object, _msg -> object end
           }
         )
         {:ok, pid} = Server.start_link(object)
         {object.id, pid}
       end)
       
-      # Measure coalition formation time
-      {time_micros, {:ok, _coalition}} = :timer.tc(fn ->
-        Object.form_coalition(
-          Enum.map(objects, fn {id, _} -> id end),
-          %{goal: "performance_test", coordination: :consensus}
-        )
+      # Measure coalition formation time using OORL.CollectiveLearning
+      object_ids = Enum.map(objects, fn {id, _} -> id end)
+      {time_micros, coalition} = :timer.tc(fn ->
+        OORL.CollectiveLearning.new(object_ids)
       end)
       
       # Cleanup
-      Enum.each(objects, fn {_, pid} -> Process.exit(pid, :kill) end)
+      Enum.each(objects, fn {_, pid} -> GenServer.stop(pid, :normal, 100) end)
       
       formation_time_ms = time_micros / 1000
       
@@ -237,10 +235,7 @@ defmodule Object.PerformanceBaselineTest do
             |> Enum.map(fn {id, _} -> id end)
           
           {time, result} = :timer.tc(fn ->
-            Object.form_coalition(group_objects, %{
-              goal: "group_#{group}",
-              coordination: :voting
-            })
+            OORL.CollectiveLearning.new(group_objects)
           end)
           
           {group, time, result}
@@ -250,7 +245,7 @@ defmodule Object.PerformanceBaselineTest do
       results = Task.await_many(tasks, 5000)
       
       # Cleanup
-      Enum.each(objects, fn {_, pid} -> Process.exit(pid, :kill) end)
+      Enum.each(objects, fn {_, pid} -> GenServer.stop(pid, :normal, 100) end)
       
       # Verify all succeeded and within time limits
       Enum.each(results, fn {group, time_micros, result} ->
@@ -278,16 +273,17 @@ defmodule Object.PerformanceBaselineTest do
           step_count: 0
         },
         methods: %{
-          update: fn state, experience ->
+          update: fn object, experience ->
             # Simulate Q-learning update
+            state = object.state
             new_q = Map.get(state.q_table, experience.state, %{})
               |> Map.put(experience.action, experience.reward)
             
-            %{state | 
+            %{object | state: %{state | 
               q_table: Map.put(state.q_table, experience.state, new_q),
               experience_buffer: [experience | state.experience_buffer],
               step_count: state.step_count + 1
-            }
+            }}
           end
         }
       )
@@ -314,7 +310,7 @@ defmodule Object.PerformanceBaselineTest do
         GenServer.call(agent_pid, :get_state)
       end)
       
-      Process.exit(agent_pid, :kill)
+      GenServer.stop(agent_pid, :normal, 100)
       
       updates_per_second = length(experiences) / (time_micros / 1_000_000)
       
@@ -333,7 +329,7 @@ defmodule Object.PerformanceBaselineTest do
             id: "parallel_agent_#{i}",
             state: %{updates: 0},
             methods: %{
-              learn: fn state, _exp -> %{state | updates: state.updates + 1} end
+              learn: fn object, _exp -> %{object | state: %{object.state | updates: object.state.updates + 1}} end
             }
           )
           {:ok, pid} = Server.start_link(agent)
@@ -356,7 +352,7 @@ defmodule Object.PerformanceBaselineTest do
         end)
         
         # Cleanup
-        Enum.each(agents, &Process.exit(&1, :kill))
+        Enum.each(agents, &GenServer.stop(&1, :normal, 100))
         
         total_updates = count * updates_per_agent
         updates_per_second = total_updates / (time_micros / 1_000_000)
@@ -425,7 +421,7 @@ defmodule Object.PerformanceBaselineTest do
         object = Object.new(id: "rate_test_#{i}", state: %{}, methods: %{})
         case Server.start_link(object) do
           {:ok, pid} ->
-            Process.exit(pid, :kill)
+            GenServer.stop(pid, :normal, 100)
             acc + 1
           _ -> acc
         end
@@ -439,7 +435,7 @@ defmodule Object.PerformanceBaselineTest do
     object = Object.new(
       id: "throughput_test",
       state: %{count: 0},
-      methods: %{inc: fn state, _ -> %{state | count: state.count + 1} end}
+      methods: %{inc: fn object, _ -> %{object | state: %{object.state | count: object.state.count + 1}} end}
     )
     {:ok, pid} = Server.start_link(object)
     
@@ -449,7 +445,7 @@ defmodule Object.PerformanceBaselineTest do
       GenServer.call(pid, :get_state)
     end)
     
-    Process.exit(pid, :kill)
+    GenServer.stop(pid, :normal, 100)
     count / (time_micros / 1_000_000)
   end
   
@@ -461,13 +457,11 @@ defmodule Object.PerformanceBaselineTest do
     end)
     
     {time_micros, _} = :timer.tc(fn ->
-      Object.form_coalition(
-        Enum.map(objects, fn {id, _} -> id end),
-        %{goal: "test", coordination: :consensus}
-      )
+      object_ids = Enum.map(objects, fn {id, _} -> id end)
+      OORL.CollectiveLearning.new(object_ids)
     end)
     
-    Enum.each(objects, fn {_, pid} -> Process.exit(pid, :kill) end)
+    Enum.each(objects, fn {_, pid} -> GenServer.stop(pid, :normal, 100) end)
     time_micros / 1000  # Convert to milliseconds
   end
   
@@ -492,7 +486,7 @@ defmodule Object.PerformanceBaselineTest do
     
     final = gc_and_measure.()
     
-    Enum.each(objects, &Process.exit(&1, :kill))
+    Enum.each(objects, &GenServer.stop(&1, :normal, 100))
     
     (final - initial) / count
   end
@@ -502,7 +496,7 @@ defmodule Object.PerformanceBaselineTest do
       id: "update_test",
       state: %{updates: 0},
       methods: %{
-        update: fn state, _ -> %{state | updates: state.updates + 1} end
+        update: fn object, _ -> %{object | state: %{object.state | updates: object.state.updates + 1}} end
       }
     )
     {:ok, pid} = Server.start_link(agent)
@@ -515,7 +509,7 @@ defmodule Object.PerformanceBaselineTest do
       GenServer.call(pid, :get_state)
     end)
     
-    Process.exit(pid, :kill)
+    GenServer.stop(pid, :normal, 100)
     count / (time_micros / 1_000_000)
   end
 end

@@ -234,8 +234,8 @@ defmodule Object.DistributedTrainingTest do
     test "separates global and local model states" do
       trainer = DistributedTraining.new()
       
-      assert trainer.global_model_state != nil
-      assert trainer.local_model_state != nil
+      assert not is_nil(trainer.global_model_state)
+      assert not is_nil(trainer.local_model_state)
       assert trainer.global_model_state.parameters == trainer.local_model_state.parameters
     end
   end

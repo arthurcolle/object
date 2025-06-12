@@ -89,7 +89,7 @@ defmodule OORLFrameworkTest do
       
       learning_updates = PolicyLearning.interaction_dyad_learning(object_id, dyad_experiences)
       
-      assert Map.has_key?(learning_updates, :total_dyad_improvement)
+      assert Map.has_key?(learning_updates, :total_experiences)
       assert Map.has_key?(learning_updates, :active_dyads)
       assert learning_updates.active_dyads == 1
     end
@@ -102,43 +102,46 @@ defmodule OORLFrameworkTest do
       
       case CollectiveLearning.form_learning_coalition(objects, task_requirements) do
         {:ok, coalition} ->
-          assert Map.has_key?(coalition, :members)
-          assert Map.has_key?(coalition, :trust_weights)
-          assert Map.has_key?(coalition, :collective_goals)
+          assert Map.has_key?(coalition, :member_objects)
+          assert Map.has_key?(coalition, :trust_network)
+          assert Map.has_key?(coalition, :collective_memory)
           
         {:error, reason} ->
-          assert is_binary(reason)
+          assert reason == :insufficient_compatible_objects || is_binary(reason)
       end
     end
     
     test "performs distributed policy optimization" do
-      coalition = %{
-        members: ["member_1", "member_2"],
-        trust_weights: %{"member_1" => 1.0, "member_2" => 0.8},
-        shared_experience_buffer: [],
-        collective_goals: [:maximize_collective_reward],
-        coordination_protocol: :consensus_based
+      coalition = %OORL.CollectiveLearning{
+        member_objects: MapSet.new(["member_1", "member_2"]),
+        trust_network: %{trust_scores: %{"member_1" => 1.0, "member_2" => 0.8}},
+        collective_memory: [],
+        performance_metrics: %{learning_rate: 0.01, convergence_rate: 0.8}
       }
       
-      {:ok, global_update} = CollectiveLearning.distributed_policy_optimization(coalition)
+      global_update = CollectiveLearning.distributed_policy_optimization(coalition)
       
-      assert Map.has_key?(global_update, :global_gradient)
+      assert Map.has_key?(global_update, :performance_metrics)
     end
     
     test "detects emergent behaviors in coalition" do
-      coalition = %{
-        members: ["emerg_1", "emerg_2", "emerg_3"],
-        trust_weights: %{"emerg_1" => 1.0, "emerg_2" => 0.9, "emerg_3" => 0.8}
+      coalition = %OORL.CollectiveLearning{
+        member_objects: MapSet.new(["emerg_1", "emerg_2", "emerg_3"]),
+        trust_network: %{trust_scores: %{"emerg_1" => 1.0, "emerg_2" => 0.9, "emerg_3" => 0.8}},
+        collective_memory: [%{interaction: "test", timestamp: DateTime.utc_now()}],
+        emergence_detector: %{observation_window: 3600},
+        knowledge_graph: %{metadata: %{graph_density: 0.5, connectivity: 0.8}}
       }
       
       case CollectiveLearning.emergence_detection(coalition) do
-        {:emergent_behavior_detected, details} ->
-          assert Map.has_key?(details, :score)
-          assert Map.has_key?(details, :behavior_signature)
-          assert details.score > 0.2
+        {:ok, details} ->
+          assert Map.has_key?(details, :emergence_score)
+          assert Map.has_key?(details, :emergence_type)
+          assert details.emergence_score >= 0.0
           
-        {:no_emergence, score} ->
-          assert is_float(score)
+        other ->
+          # Handle unexpected result patterns
+          flunk("Unexpected emergence detection result: #{inspect(other)}")
       end
     end
   end
@@ -246,7 +249,7 @@ defmodule OORLFrameworkTest do
       
       case CollectiveLearning.form_learning_coalition(objects, task_requirements) do
         {:error, reason} ->
-          assert is_binary(reason)
+          assert reason == :insufficient_compatible_objects || is_binary(reason)
         _ ->
           flunk("Should return error for empty object list")
       end

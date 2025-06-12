@@ -112,7 +112,7 @@ defmodule Object.P2PBootstrap do
   
   @impl true
   def init(opts) do
-    node_id = Keyword.get(opts, :node_id, Object.DistributedRegistry.get_node_id())
+    node_id = Keyword.get(opts, :node_id) || get_or_generate_node_id()
     
     state = %{
       node_id: node_id,
@@ -608,5 +608,21 @@ defmodule Object.P2PBootstrap do
   
   defp schedule_peer_cleanup do
     Process.send_after(self(), :cleanup_peers, 300_000)  # 5 minutes
+  end
+  
+  defp get_or_generate_node_id do
+    case GenServer.whereis(Object.DistributedRegistry) do
+      nil ->
+        # Generate a temporary node ID if DistributedRegistry isn't available
+        :crypto.strong_rand_bytes(20)
+      
+      _pid ->
+        try do
+          Object.DistributedRegistry.get_node_id()
+        rescue
+          _ ->
+            :crypto.strong_rand_bytes(20)
+        end
+    end
   end
 end

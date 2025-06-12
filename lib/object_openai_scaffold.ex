@@ -268,7 +268,7 @@ defmodule Object.OpenAIScaffold do
     end
   end
   
-  defp generate_endpoint_modules(endpoints, schemas) do
+  defp generate_endpoint_modules(endpoints, _schemas) do
     Enum.map(endpoints, fn {key, endpoint} ->
       module_name = endpoint_to_module_name(key)
       
@@ -331,7 +331,7 @@ defmodule Object.OpenAIScaffold do
     end)
   end
   
-  defp generate_client_module(parsed) do
+  defp generate_client_module(_parsed) do
     module_code = """
     defmodule Object.OpenAIScaffold.APIClient do
       @moduledoc \"\"\"
@@ -500,7 +500,7 @@ defmodule Object.OpenAIScaffold do
     end
   end
   
-  defp select_relevant_tools(object, context, endpoints) do
+  defp select_relevant_tools(_object, context, endpoints) do
     # Filter endpoints based on context
     relevant = Enum.filter(endpoints, fn {_key, endpoint} ->
       context_matches_endpoint?(context, endpoint)
@@ -685,7 +685,7 @@ defmodule Object.OpenAIScaffold do
       {:ok, response} ->
         {:error, "API error: #{response.status_code} - #{response.body}"}
         
-      {:error, reason} when retries > 0 ->
+      {:error, _reason} when retries > 0 ->
         Process.sleep(1000)
         execute_with_retry(request, retries - 1)
         

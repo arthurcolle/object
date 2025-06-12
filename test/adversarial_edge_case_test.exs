@@ -115,8 +115,16 @@ defmodule AdversarialEdgeCaseTest do
           # Phase 3: Update trust scores based on verification results
           trust_updates = TrustManager.update_trust_scores(updated_trust_mgr, verified_reports)
           
+          # Convert trust updates list to map for object updates
+          trust_updates_map = Enum.into(trust_updates, %{}, fn update ->
+            {update.object_id, %{
+              reputation_delta: (update.new_trust_score - update.old_trust_score),
+              peer_trust_updates: %{}
+            }}
+          end)
+          
           # Phase 4: Update object reputations and detect byzantine behavior
-          {updated_objects, byzantine_detections} = update_objects_with_trust_feedback(objects, trust_updates)
+          {updated_objects, byzantine_detections} = update_objects_with_trust_feedback(objects, trust_updates_map)
           
           # Phase 5: Form coalitions with trust-based filtering
           coalition_formation_results = attempt_coalition_formation_with_trust(updated_objects, updated_trust_mgr)

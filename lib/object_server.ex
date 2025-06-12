@@ -776,9 +776,59 @@ defmodule Object.Server do
   end
   
   @impl true
+  def handle_cast({:ping, {from_pid, ref}}, object) do
+    # Handle ping messages for latency testing
+    send(from_pid, {:pong, ref, :os.system_time(:microsecond)})
+    {:noreply, object}
+  end
+
+  @impl true
+  def handle_cast({:update, update_data}, object) do
+    # Handle OORL learning updates
+    case Map.get(object.methods, :update) do
+      nil -> {:noreply, object}
+      update_method -> 
+        try do
+          updated_object = update_method.(object, update_data)
+          {:noreply, updated_object}
+        rescue
+          error ->
+            Logger.error("Error in update method for object #{object.id}: #{inspect(error)}")
+            {:noreply, object}
+        end
+    end
+  end
+
+  @impl true
   def handle_cast({:process_messages}, object) do
     {_processed_messages, updated_object} = Object.process_messages(object)
     {:noreply, updated_object}
+  end
+
+  @impl true
+  def handle_cast({message_type, data}, object) when is_atom(message_type) do
+    # Generic handler for any other cast messages
+    case Map.get(object.methods, message_type) do
+      nil -> 
+        Logger.debug("Unhandled cast message #{message_type} for object #{object.id}")
+        {:noreply, object}
+      method -> 
+        try do
+          updated_object = method.(object, data)
+          {:noreply, updated_object}
+        rescue
+          error ->
+            Logger.error("Error in #{message_type} method for object #{object.id}: #{inspect(error)}")
+            {:noreply, object}
+        end
+    end
+  end
+
+  @impl true
+  def handle_cast(message, object) do
+    # Fallback for any other message patterns
+    Logger.debug("Unhandled cast message #{inspect(message)} for object #{object.id}")
+    {:noreply, object}
   end
   
   @impl true

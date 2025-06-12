@@ -587,7 +587,7 @@ defmodule AAOSComplianceTest do
       case CollectiveLearning.form_learning_coalition(objects, task_requirements) do
         {:ok, coalition} ->
           # Test distributed policy optimization
-          {:ok, global_update} = CollectiveLearning.distributed_policy_optimization(coalition)
+          global_update = CollectiveLearning.distributed_policy_optimization(coalition)
           assert Map.has_key?(global_update, :global_gradient)
           
           # Test emergence detection

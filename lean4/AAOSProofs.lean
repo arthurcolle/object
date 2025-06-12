@@ -12,3 +12,10 @@ import AAOSProofs.Emergence.EmergenceCriterion
 import AAOSProofs.InformationGeometry.PolicyManifold
 import AAOSProofs.QuantumInspired.Exploration
 import AAOSProofs.Topology.EmergentStructures
+
+-- Comprehensive theorem collections
+import AAOSProofs.Core.AllTheorems
+import AAOSProofs.Consciousness.EmergenceProofs
+import AAOSProofs.Universal.IntelligenceProofs
+import AAOSProofs.Neuroevolution.CivilizationProofs
+import AAOSProofs.Cosmic.IntelligenceProofs

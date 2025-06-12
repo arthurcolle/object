@@ -5,7 +5,6 @@ defmodule Object.DSPyBridge do
   """
 
   use GenServer
-  alias Object.Registry
   require Logger
 
   @default_lm_client Object.DSPyBridge.MockLMStudio

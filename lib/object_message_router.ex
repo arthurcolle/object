@@ -18,6 +18,74 @@ defmodule Object.MessageRouter do
   # Client API
   
   @doc """
+  Processes a batch of messages through the router.
+  
+  ## Parameters
+  - `router_state`: Current router state
+  - `message_batch`: List of messages to process
+  
+  ## Returns
+  `{updated_router_state, batch_results}` where batch_results contains delivery statistics
+  """
+  def process_message_batch(router_state, message_batch) do
+    start_time = System.monotonic_time(:microsecond)
+    
+    results = Enum.flat_map(message_batch, fn message ->
+      # Handle both single recipient (to) and multiple recipients (recipients)
+      recipients = cond do
+        Map.has_key?(message, :to) -> [message.to]
+        Map.has_key?(message, :recipients) -> message.recipients
+        true -> []
+      end
+      
+      Enum.map(recipients, fn recipient ->
+        result = case Registry.lookup(Object.Registry, recipient) do
+          [{pid, _}] when is_pid(pid) ->
+            try do
+              GenServer.cast(pid, {:receive_message, message})
+              :success
+            catch
+              :exit, reason -> {:error, {:target_process_died, reason}}
+              error -> {:error, error}
+            end
+          
+          [] ->
+            {:error, :target_not_found}
+        end
+        
+        {"#{message.id}->#{recipient}", result}
+      end)
+    end)
+    
+    # Count results
+    batch_results = Enum.reduce(results, %{delivered: 0, failed: 0, dropped: 0}, fn
+      {_id, :success}, acc -> 
+        %{acc | delivered: acc.delivered + 1}
+      {_id, {:error, _reason}}, acc -> 
+        %{acc | failed: acc.failed + 1}
+    end)
+    
+    # Update router stats
+    end_time = System.monotonic_time(:microsecond)
+    batch_latency = end_time - start_time
+    
+    updated_stats = %{
+      router_state.performance_stats | 
+      messages_routed: router_state.performance_stats.messages_routed + length(message_batch),
+      average_latency: update_average_latency(
+        router_state.performance_stats.average_latency,
+        router_state.performance_stats.messages_routed,
+        batch_latency,
+        length(message_batch)
+      )
+    }
+    
+    updated_router = %{router_state | performance_stats: updated_stats}
+    
+    {updated_router, batch_results}
+  end
+
+  @doc """
   Creates a new message router for the given objects and dyads.
   
   ## Parameters
@@ -25,7 +93,7 @@ defmodule Object.MessageRouter do
   - `initial_dyads`: Initial dyad connections
   
   ## Returns
-  `{:ok, router}` with initialized routing state
+  Router state with initialized routing state
   """
   def new(objects, initial_dyads \\ %{}) do
     router_state = %{
@@ -40,7 +108,7 @@ defmodule Object.MessageRouter do
       }
     }
     
-    {:ok, router_state}
+    router_state
   end
   
   @doc """
@@ -79,6 +147,27 @@ defmodule Object.MessageRouter do
   """
   def get_routing_stats() do
     GenStage.call(__MODULE__, :get_stats)
+  end
+  
+  @doc """
+  Gets active dyads from router state.
+  """
+  def get_active_dyads(router_state) do
+    Map.get(router_state, :dyads, %{})
+  end
+  
+  @doc """
+  Gets objects from router state.
+  """
+  def get_objects(router_state) do
+    Map.get(router_state, :objects, [])
+  end
+  
+  @doc """
+  Updates the router topology with new dyads.
+  """
+  def update_topology(router_state, new_dyads) do
+    Map.put(router_state, :dyads, new_dyads)
   end
   
   # Producer callbacks
@@ -186,6 +275,16 @@ defmodule Object.MessageRouter do
     score = base_score + age_factor
     
     Map.put(message, :priority_score, score)
+  end
+  
+  defp update_average_latency(current_avg, current_count, new_latency, new_count) do
+    if current_count == 0 do
+      new_latency / new_count
+    else
+      total_current = current_avg * current_count
+      total_new = new_latency
+      (total_current + total_new) / (current_count + new_count)
+    end
   end
 end
 

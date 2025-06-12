@@ -559,15 +559,19 @@ defmodule OORL.CollectiveLearning do
 
   defp classify_emergence_type(indicators) do
     cond do
+      Map.has_key?(indicators, :intelligence_amplification) and 
       indicators.intelligence_amplification.amplification_factor > 2.0 ->
         :strong_emergence
       
+      Map.has_key?(indicators, :collective_reasoning) and
       indicators.collective_reasoning.distributed_reasoning_score > 0.8 ->
         :collective_intelligence
       
+      Map.has_key?(indicators, :novel_solutions) and
       indicators.novel_solutions.innovation_score > 0.7 ->
         :creative_emergence
       
+      Map.has_key?(indicators, :distributed_coordination) and
       indicators.distributed_coordination.coordination_efficiency > 0.8 ->
         :coordination_emergence
       
@@ -688,4 +692,465 @@ defmodule OORL.CollectiveLearning do
   defp adaptive_optimization(collective, _feedback), do: collective
   defp evolutionary_optimization(collective, _feedback), do: collective
   defp gradient_based_optimization(collective, _feedback), do: collective
+
+  @doc """
+  Performs distributed policy optimization across coalition members.
+  
+  Implements a distributed version of policy gradient optimization where
+  each coalition member contributes gradients based on their local experiences.
+  
+  ## Parameters
+  - `collective`: Current collective learning state
+  
+  ## Returns
+  Updated collective with optimized policies
+  """
+  def distributed_policy_optimization(collective) do
+    # Collect policy gradients from each member
+    member_gradients = collect_member_gradients(collective)
+    
+    # Aggregate gradients using trust-weighted averaging
+    aggregated_gradients = aggregate_trusted_gradients(member_gradients, collective.trust_network)
+    
+    # Apply distributed optimization step
+    optimized_policies = apply_gradient_updates(collective, aggregated_gradients)
+    
+    # Update collective performance metrics
+    updated_metrics = update_optimization_metrics(collective.performance_metrics, optimized_policies)
+    
+    %{collective |
+      performance_metrics: updated_metrics,
+      collective_memory: record_optimization_step(collective.collective_memory, optimized_policies)
+    }
+  end
+
+  @doc """
+  Forms a learning coalition from compatible objects based on learning objectives.
+  
+  Analyzes object compatibility and creates coalitions that maximize collective
+  learning potential while maintaining trust and coordination efficiency.
+  
+  ## Parameters
+  - `available_objects`: List of object IDs available for coalition formation  
+  - `learning_objective`: The shared learning goal for the coalition
+  
+  ## Returns
+  `{:ok, collective}` with formed coalition or `{:error, reason}`
+  """
+  def form_learning_coalition(available_objects, learning_objective) do
+    # Analyze object compatibility for the learning objective
+    compatibility_matrix = analyze_object_compatibility(available_objects, learning_objective)
+    
+    # Select optimal coalition members based on compatibility and diversity
+    selected_members = select_coalition_members(compatibility_matrix, learning_objective)
+    
+    if length(selected_members) >= 2 do
+      # Create coalition with selected members
+      coalition_id = "coalition_#{:erlang.phash2(learning_objective)}_#{System.system_time(:millisecond)}"
+      
+      coalition_opts = [
+        consensus_algorithm: determine_optimal_consensus(selected_members),
+        byzantine_tolerance: calculate_required_tolerance(selected_members),
+        emergence_detection: true,
+        observation_window: 1800
+      ]
+      
+      collective = new(coalition_id, selected_members, coalition_opts)
+      
+      # Initialize coalition with learning objective
+      initialized_collective = initialize_learning_objective(collective, learning_objective)
+      
+      {:ok, initialized_collective}
+    else
+      {:error, :insufficient_compatible_objects}
+    end
+  end
+
+  @doc """
+  Detects emergent behaviors and intelligence in the collective.
+  
+  Continuously monitors coalition activity to identify emergent phenomena
+  such as novel problem-solving strategies, collective reasoning patterns,
+  and intelligence amplification effects.
+  
+  ## Parameters
+  - `collective`: Current collective learning state
+  
+  ## Returns
+  `{:ok, emergence_report}` with detailed emergence analysis
+  """
+  def emergence_detection(collective) do
+    # Collect recent activity data
+    recent_activity = collect_recent_activity(collective)
+    
+    # Detect various types of emergence
+    emergence_indicators = %{
+      behavioral_emergence: detect_behavioral_emergence(recent_activity),
+      cognitive_emergence: detect_cognitive_emergence(collective),
+      social_emergence: detect_social_emergence(collective),
+      adaptive_emergence: detect_adaptive_emergence(collective)
+    }
+    
+    # Calculate overall emergence score
+    emergence_score = calculate_comprehensive_emergence_score(emergence_indicators)
+    
+    # Generate emergence report
+    emergence_report = %{
+      emergence_score: emergence_score,
+      emergence_type: classify_emergence_type(emergence_indicators),
+      indicators: emergence_indicators,
+      detected_phenomena: identify_specific_phenomena(emergence_indicators),
+      coalition_maturity: assess_coalition_maturity(collective),
+      prediction_confidence: calculate_prediction_confidence(emergence_indicators),
+      recommendations: generate_emergence_recommendations(emergence_indicators)
+    }
+    
+    {:ok, emergence_report}
+  end
+
+  # Private functions for distributed policy optimization
+  
+  defp collect_member_gradients(collective) do
+    Enum.map(collective.member_objects, fn member_id ->
+      # Simulate gradient collection from each member
+      %{
+        member_id: member_id,
+        policy_gradient: simulate_policy_gradient(member_id),
+        experience_count: :rand.uniform(100),
+        confidence: get_trust_score(collective.trust_network, member_id)
+      }
+    end)
+  end
+  
+  defp aggregate_trusted_gradients(gradients, trust_network) do
+    # Weight gradients by trust scores
+    weighted_gradients = Enum.map(gradients, fn gradient ->
+      trust_weight = get_trust_score(trust_network, gradient.member_id)
+      %{gradient | policy_gradient: scale_gradient(gradient.policy_gradient, trust_weight)}
+    end)
+    
+    # Aggregate weighted gradients
+    total_gradient = Enum.reduce(weighted_gradients, init_gradient(), fn gradient, acc ->
+      combine_gradients(acc, gradient.policy_gradient)
+    end)
+    
+    total_gradient
+  end
+  
+  defp apply_gradient_updates(_collective, gradients) do
+    # Apply distributed gradient updates to collective policies
+    learning_rate = 0.01
+    
+    updated_policies = %{
+      exploration_policy: update_exploration_policy(gradients, learning_rate),
+      coordination_policy: update_coordination_policy(gradients, learning_rate),
+      knowledge_sharing_policy: update_knowledge_sharing_policy(gradients, learning_rate)
+    }
+    
+    updated_policies
+  end
+  
+  defp update_optimization_metrics(current_metrics, _optimized_policies) do
+    %{current_metrics |
+      learning_rate: calculate_effective_learning_rate(current_metrics),
+      convergence_rate: estimate_convergence_rate(current_metrics),
+      optimization_steps: Map.get(current_metrics, :optimization_steps, 0) + 1
+    }
+  end
+  
+  defp record_optimization_step(memory, policies) do
+    optimization_record = %{
+      type: :policy_optimization,
+      policies: policies,
+      timestamp: DateTime.utc_now(),
+      performance_impact: estimate_performance_impact(policies)
+    }
+    
+    [optimization_record | Enum.take(memory, 999)]
+  end
+
+  # Private functions for coalition formation
+  
+  defp analyze_object_compatibility(objects, learning_objective) do
+    # Create compatibility matrix for all object pairs
+    Enum.reduce(objects, %{}, fn object_a, acc ->
+      object_scores = Enum.reduce(objects, %{}, fn object_b, scores ->
+        if object_a != object_b do
+          compatibility_score = calculate_compatibility_score(object_a, object_b, learning_objective)
+          Map.put(scores, object_b, compatibility_score)
+        else
+          scores
+        end
+      end)
+      Map.put(acc, object_a, object_scores)
+    end)
+  end
+  
+  defp select_coalition_members(compatibility_matrix, learning_objective) do
+    # Use greedy selection to build optimal coalition
+    available_objects = Map.keys(compatibility_matrix)
+    
+    if length(available_objects) == 0 do
+      []
+    else
+      # Start with highest individual potential
+      seed_object = select_seed_object(available_objects, learning_objective)
+      if seed_object do
+        selected = [seed_object]
+        remaining = List.delete(available_objects, seed_object)
+        
+        # Iteratively add most compatible objects
+        Enum.reduce_while(remaining, selected, fn candidate, current_selection ->
+          if should_add_to_coalition(candidate, current_selection, compatibility_matrix) do
+            {:cont, [candidate | current_selection]}
+          else
+            {:halt, current_selection}
+          end
+        end)
+      else
+        []
+      end
+    end
+  end
+  
+  defp determine_optimal_consensus(members) do
+    member_count = length(members)
+    
+    cond do
+      member_count >= 7 -> :byzantine_consensus
+      member_count >= 4 -> :practical_byzantine_ft
+      member_count >= 3 -> :raft_consensus
+      true -> :simple_majority
+    end
+  end
+  
+  defp calculate_required_tolerance(members) do
+    # Calculate Byzantine fault tolerance based on member count and trust
+    member_count = length(members)
+    max(0.1, min(0.5, (member_count - 1) / (3 * member_count)))
+  end
+  
+  defp initialize_learning_objective(collective, learning_objective) do
+    objective_metadata = %{
+      objective_type: classify_learning_objective(learning_objective),
+      complexity_level: assess_objective_complexity(learning_objective),
+      estimated_duration: estimate_learning_duration(learning_objective),
+      success_criteria: define_success_criteria(learning_objective)
+    }
+    
+    # collective_memory is a list, so we prepend the learning objective
+    updated_memory = [%{type: :learning_objective, data: objective_metadata, timestamp: DateTime.utc_now()} | collective.collective_memory]
+    %{collective | collective_memory: updated_memory}
+  end
+
+  # Private functions for emergence detection
+  
+  defp collect_recent_activity(collective) do
+    # Collect activity from the last observation window
+    observation_window = collective.emergence_detector.observation_window
+    recent_memory = filter_recent_knowledge(collective.collective_memory, observation_window)
+    
+    %{
+      knowledge_exchanges: count_knowledge_exchanges(recent_memory),
+      consensus_decisions: count_consensus_decisions(recent_memory),
+      trust_updates: count_trust_updates(recent_memory),
+      novel_solutions: count_novel_solutions(recent_memory),
+      coordination_events: count_coordination_events(recent_memory)
+    }
+  end
+  
+  defp detect_behavioral_emergence(activity) do
+    # Detect emergent behavioral patterns
+    %{
+      novel_coordination_patterns: detect_novel_coordination(activity),
+      adaptive_strategies: detect_adaptive_strategies(activity),
+      emergent_roles: detect_emergent_roles(activity),
+      behavioral_complexity: calculate_behavioral_complexity(activity)
+    }
+  end
+  
+  defp detect_cognitive_emergence(collective) do
+    # Detect emergent cognitive capabilities
+    %{
+      collective_reasoning: assess_collective_reasoning_capability(collective),
+      distributed_problem_solving: assess_distributed_problem_solving(collective),
+      meta_cognitive_awareness: assess_meta_cognitive_awareness(collective),
+      knowledge_synthesis: assess_knowledge_synthesis_capability(collective)
+    }
+  end
+  
+  defp detect_social_emergence(collective) do
+    # Detect emergent social structures and dynamics
+    %{
+      social_hierarchy: detect_emergent_hierarchy(collective),
+      communication_patterns: analyze_communication_patterns(collective),
+      trust_networks: analyze_trust_network_evolution(collective),
+      social_learning: assess_social_learning_dynamics(collective)
+    }
+  end
+  
+  defp detect_adaptive_emergence(collective) do
+    # Detect emergent adaptive capabilities
+    %{
+      environmental_adaptation: assess_environmental_adaptation(collective),
+      learning_adaptation: assess_learning_adaptation(collective),
+      structural_adaptation: assess_structural_adaptation(collective),
+      behavioral_adaptation: assess_behavioral_adaptation(collective)
+    }
+  end
+  
+  defp calculate_comprehensive_emergence_score(indicators) do
+    # Calculate weighted average of all emergence indicators
+    weights = %{
+      behavioral_emergence: 0.3,
+      cognitive_emergence: 0.3,
+      social_emergence: 0.2,
+      adaptive_emergence: 0.2
+    }
+    
+    Enum.reduce(weights, 0.0, fn {type, weight}, acc ->
+      type_score = calculate_indicator_type_score(Map.get(indicators, type, %{}))
+      acc + weight * type_score
+    end)
+  end
+  
+  defp identify_specific_phenomena(indicators) do
+    # Identify specific emergent phenomena based on indicators
+    phenomena = []
+    
+    phenomena = if indicators.cognitive_emergence.collective_reasoning > 0.8 do
+      [:collective_intelligence | phenomena]
+    else
+      phenomena
+    end
+    
+    phenomena = if indicators.behavioral_emergence.novel_coordination_patterns > 0.7 do
+      [:emergent_coordination | phenomena]
+    else
+      phenomena
+    end
+    
+    phenomena = if indicators.social_emergence.social_hierarchy > 0.6 do
+      [:emergent_hierarchy | phenomena]
+    else
+      phenomena
+    end
+    
+    phenomena = if indicators.adaptive_emergence.environmental_adaptation > 0.8 do
+      [:adaptive_intelligence | phenomena]
+    else
+      phenomena
+    end
+    
+    phenomena
+  end
+  
+  defp assess_coalition_maturity(collective) do
+    # Assess how mature the coalition is
+    member_count = MapSet.size(collective.member_objects)
+    knowledge_density = calculate_knowledge_density(collective.knowledge_graph)
+    trust_stability = calculate_trust_stability(collective.trust_network)
+    interaction_frequency = calculate_interaction_frequency(collective.collective_memory)
+    
+    maturity_score = (member_count / 10 + knowledge_density + trust_stability + interaction_frequency) / 4
+    
+    cond do
+      maturity_score > 0.8 -> :mature
+      maturity_score > 0.6 -> :developing
+      maturity_score > 0.4 -> :forming
+      true -> :nascent
+    end
+  end
+  
+  defp calculate_prediction_confidence(indicators) do
+    # Calculate confidence in emergence predictions
+    indicator_consistency = calculate_indicator_consistency(indicators)
+    data_quality = calculate_data_quality(indicators)
+    temporal_stability = calculate_temporal_stability(indicators)
+    
+    (indicator_consistency + data_quality + temporal_stability) / 3
+  end
+  
+  defp generate_emergence_recommendations(indicators) do
+    # Generate recommendations based on emergence analysis
+    recommendations = []
+    
+    recommendations = if indicators.cognitive_emergence.collective_reasoning < 0.5 do
+      ["Increase knowledge sharing frequency" | recommendations]
+    else
+      recommendations
+    end
+    
+    recommendations = if indicators.social_emergence.trust_networks < 0.6 do
+      ["Implement trust-building activities" | recommendations]
+    else
+      recommendations
+    end
+    
+    recommendations = if indicators.behavioral_emergence.adaptive_strategies < 0.4 do
+      ["Introduce more diverse learning scenarios" | recommendations]
+    else
+      recommendations
+    end
+    
+    recommendations
+  end
+
+  # Utility functions with placeholder implementations
+  
+  defp simulate_policy_gradient(_member_id), do: %{params: :rand.uniform(), value: :rand.uniform()}
+  defp scale_gradient(gradient, weight), do: %{gradient | value: gradient.value * weight}
+  defp init_gradient(), do: %{params: 0.0, value: 0.0}
+  defp combine_gradients(acc, gradient), do: %{params: acc.params + gradient.params, value: acc.value + gradient.value}
+  defp update_exploration_policy(_gradients, _lr), do: %{exploration_rate: 0.1 + :rand.uniform() * 0.2}
+  defp update_coordination_policy(_gradients, _lr), do: %{coordination_strength: 0.5 + :rand.uniform() * 0.3}
+  defp update_knowledge_sharing_policy(_gradients, _lr), do: %{sharing_frequency: 0.3 + :rand.uniform() * 0.4}
+  defp calculate_effective_learning_rate(metrics), do: Map.get(metrics, :learning_rate, 0.01) * 0.99
+  defp estimate_convergence_rate(_metrics), do: :rand.uniform()
+  defp estimate_performance_impact(_policies), do: :rand.uniform()
+  defp calculate_compatibility_score(_obj_a, _obj_b, _objective), do: :rand.uniform()
+  defp select_seed_object(objects, _objective) do
+    if length(objects) > 0 do
+      Enum.random(objects)
+    else
+      nil
+    end
+  end
+  defp should_add_to_coalition(_candidate, _selection, _matrix), do: :rand.uniform() > 0.3
+  defp classify_learning_objective(_objective), do: :general_learning
+  defp assess_objective_complexity(_objective), do: :medium
+  defp estimate_learning_duration(_objective), do: 3600
+  defp define_success_criteria(_objective), do: %{accuracy: 0.8, convergence: true}
+  defp count_knowledge_exchanges(_memory), do: :rand.uniform(10)
+  defp count_consensus_decisions(_memory), do: :rand.uniform(5)
+  defp count_trust_updates(_memory), do: :rand.uniform(15)
+  defp count_novel_solutions(_memory), do: :rand.uniform(3)
+  defp count_coordination_events(_memory), do: :rand.uniform(8)
+  defp detect_novel_coordination(_activity), do: :rand.uniform()
+  defp detect_adaptive_strategies(_activity), do: :rand.uniform()
+  defp detect_emergent_roles(_activity), do: :rand.uniform()
+  defp calculate_behavioral_complexity(_activity), do: :rand.uniform()
+  defp assess_collective_reasoning_capability(_collective), do: :rand.uniform()
+  defp assess_distributed_problem_solving(_collective), do: :rand.uniform()
+  defp assess_meta_cognitive_awareness(_collective), do: :rand.uniform()
+  defp assess_knowledge_synthesis_capability(_collective), do: :rand.uniform()
+  defp detect_emergent_hierarchy(_collective), do: :rand.uniform()
+  defp analyze_communication_patterns(_collective), do: :rand.uniform()
+  defp analyze_trust_network_evolution(_collective), do: :rand.uniform()
+  defp assess_social_learning_dynamics(_collective), do: :rand.uniform()
+  defp assess_environmental_adaptation(_collective), do: :rand.uniform()
+  defp assess_learning_adaptation(_collective), do: :rand.uniform()
+  defp assess_structural_adaptation(_collective), do: :rand.uniform()
+  defp assess_behavioral_adaptation(_collective), do: :rand.uniform()
+  defp calculate_indicator_type_score(indicator_map) do
+    values = Map.values(indicator_map)
+    sum = Enum.sum(values)
+    sum / max(map_size(indicator_map), 1)
+  end
+  defp calculate_knowledge_density(graph), do: graph.metadata.node_count / max(graph.metadata.node_count + 1, 1)
+  defp calculate_trust_stability(_trust_network), do: :rand.uniform()
+  defp calculate_interaction_frequency(_memory), do: :rand.uniform()
+  defp calculate_indicator_consistency(_indicators), do: :rand.uniform()
+  defp calculate_data_quality(_indicators), do: :rand.uniform()
+  defp calculate_temporal_stability(_indicators), do: :rand.uniform()
 end

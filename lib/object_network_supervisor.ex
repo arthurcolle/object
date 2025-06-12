@@ -63,21 +63,21 @@ defmodule Object.NetworkSupervisor do
       {Object.Encryption,
         encryption_config(config[:encryption] || %{}, node_id)},
       
-      # NAT traversal
-      {Object.NATTraversal,
-        nat_config(config[:nat] || %{})},
-      
-      # P2P bootstrap and discovery
-      {Object.P2PBootstrap,
-        bootstrap_config(config[:bootstrap] || %{}, node_id, listen_port)},
-      
-      # Distributed hash table
+      # Distributed hash table (must start before P2PBootstrap)
       if Map.get(config[:dht] || %{}, :enabled, true) do
         {Object.DistributedRegistry,
           dht_config(config[:dht] || %{}, node_id, listen_port)}
       else
         nil
       end,
+      
+      # NAT traversal
+      {Object.NATTraversal,
+        nat_config(config[:nat] || %{})},
+      
+      # P2P bootstrap and discovery (depends on DistributedRegistry)
+      {Object.P2PBootstrap,
+        bootstrap_config(config[:bootstrap] || %{}, node_id, listen_port)},
       
       # Byzantine fault tolerance
       if Map.get(config[:byzantine] || %{}, :enabled, true) do

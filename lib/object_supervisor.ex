@@ -272,6 +272,7 @@ defmodule Object.Supervisor do
     }
   end
   
+  # Intentionally unused - placeholder for future resource monitoring
   defp resource_monitor_spec(opts) do
     # Resource monitoring disabled - Object.ResourceMonitor not available
     if Keyword.get(opts, :enable_resource_monitoring, false) do
@@ -287,6 +288,7 @@ defmodule Object.Supervisor do
     end
   end
   
+  # Intentionally unused - placeholder for future health monitoring
   defp health_monitor_spec(opts) do
     # Health monitoring disabled - Object.HealthMonitor not available
     if Keyword.get(opts, :enable_health_monitoring, false) do
@@ -318,6 +320,7 @@ defmodule Object.Supervisor do
     end
   end
   
+  # Intentionally unused - would require separate GenServer for implementation
   defp restart_child_with_progressive_backoff(child_id) do
     # Calculate backoff delay based on recent restart history
     restart_count = get_recent_restart_count(child_id)
@@ -335,6 +338,7 @@ defmodule Object.Supervisor do
     end
   end
   
+  # Helper for restart_child_with_progressive_backoff - currently unused
   defp get_recent_restart_count(child_id) do
     # This would track restart history per child
     # For now, return a simple count based on process dictionary
@@ -357,6 +361,7 @@ defmodule Object.Supervisor do
     end
   end
   
+  # Helper for restart_child_with_progressive_backoff - currently unused
   defp calculate_backoff_delay(restart_count) do
     delay = @initial_restart_delay * :math.pow(@backoff_multiplier, restart_count)
     min(trunc(delay), @max_restart_delay)

@@ -229,8 +229,8 @@ defmodule Object.TransferLearningTest do
           assert length(meta_state.learning_to_learn_history) > 
                  length(transfer_system.meta_learning_state.learning_to_learn_history)
           
-        {:error, reason} ->
-          assert is_binary(reason)
+        result ->
+          flunk("Unexpected meta-learning result: #{inspect(result)}")
       end
     end
     
@@ -241,7 +241,7 @@ defmodule Object.TransferLearningTest do
       # Should handle gracefully even with minimal data
       case TransferLearning.meta_learn(transfer_system, adaptation_task, few_shot_examples) do
         {:ok, _, _} -> :ok
-        {:error, _} -> :ok  # Both outcomes are acceptable
+        _other -> :ok  # Both outcomes are acceptable
       end
     end
   end

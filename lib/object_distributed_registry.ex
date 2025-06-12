@@ -120,6 +120,19 @@ defmodule Object.DistributedRegistry do
     GenServer.call(__MODULE__, :get_node_id)
   end
   
+  @doc """
+  Adds a peer to the routing table.
+  
+  ## Parameters
+  - `peer_id`: Node ID of the peer
+  - `address`: IP address of the peer
+  - `port`: Port number of the peer
+  """
+  @spec add_peer(node_id(), String.t(), non_neg_integer()) :: :ok | {:error, term()}
+  def add_peer(peer_id, address, port) do
+    GenServer.call(__MODULE__, {:add_peer, peer_id, address, port})
+  end
+  
   # Server Callbacks
   
   @impl true
@@ -133,28 +146,37 @@ defmodule Object.DistributedRegistry do
       self_id: node_id
     }
     
-    # Start network transport
-    {:ok, transport} = Object.NetworkTransport.start_link()
+    # Start network transport - handle already started case
+    transport_result = case Object.NetworkTransport.start_link() do
+      {:ok, pid} -> {:ok, pid}
+      {:error, {:already_started, pid}} -> {:ok, pid}
+      other -> other
+    end
     
-    state = %{
-      node_id: node_id,
-      routing_table: routing_table,
-      storage: %{},
-      pending_queries: %{},
-      transport: transport,
-      config: %{
-        listen_port: Keyword.get(opts, :port, 4000),
-        bootstrap_nodes: Keyword.get(opts, :bootstrap_nodes, []),
-        storage_limit: Keyword.get(opts, :storage_limit, 1000)
-      }
-    }
-    
-    # Schedule periodic tasks
-    schedule_refresh()
-    schedule_republish()
-    schedule_cleanup()
-    
-    {:ok, state}
+    case transport_result do
+      {:ok, transport} ->
+        state = %{
+          node_id: node_id,
+          routing_table: routing_table,
+          storage: %{},
+          pending_queries: %{},
+          transport: transport,
+          config: %{
+            listen_port: Keyword.get(opts, :port, 4000),
+            bootstrap_nodes: Keyword.get(opts, :bootstrap_nodes, []),
+            storage_limit: Keyword.get(opts, :storage_limit, 1000)
+          }
+        }
+        
+        # Schedule periodic tasks
+        schedule_refresh()
+        schedule_republish()
+        schedule_cleanup()
+        
+        {:ok, state}
+      {:error, reason} ->
+        {:stop, reason}
+    end
   end
   
   @impl true
@@ -228,6 +250,13 @@ defmodule Object.DistributedRegistry do
     {:reply, :ok, state}
   end
   
+  @impl true
+  def handle_call({:add_peer, peer_id, address, port}, _from, state) do
+    # Add peer to routing table
+    updated_state = add_node(state, peer_id, address, port)
+    {:reply, :ok, updated_state}
+  end
+
   @impl true
   def handle_call(:get_node_id, _from, state) do
     {:reply, state.node_id, state}

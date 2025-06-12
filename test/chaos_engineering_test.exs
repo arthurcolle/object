@@ -11,8 +11,8 @@ defmodule ChaosEngineeringTest do
   
   require Logger
   
-  @test_timeout 120_000
-  @chaos_duration 30_000
+  @test_timeout 60_000
+  @chaos_duration 10_000
   @recovery_timeout 15_000
   @failure_injection_rate 0.1  # 10% failure rate
   @network_delay_range {50, 500}  # 50-500ms delays
@@ -64,15 +64,20 @@ defmodule ChaosEngineeringTest do
         }
       ]
       
-      # Run chaos experiments
-      chaos_results = Enum.map(chaos_experiments, fn experiment ->
-        run_chaos_experiment(
-          chaos_system,
-          chaos_controller,
-          resilience_monitor,
-          experiment
-        )
+      # Run chaos experiments concurrently
+      chaos_tasks = Enum.map(chaos_experiments, fn experiment ->
+        Task.async(fn ->
+          run_chaos_experiment(
+            chaos_system,
+            chaos_controller,
+            resilience_monitor,
+            experiment
+          )
+        end)
       end)
+      
+      # Wait for all chaos experiments to complete
+      chaos_results = Task.await_many(chaos_tasks, @test_timeout - 5000)
       
       # Analyze system resilience
       resilience_analysis = analyze_system_resilience(chaos_results)
@@ -585,7 +590,7 @@ defmodule ChaosEngineeringTest do
       :auxiliary_service -> :rand.uniform(5) + 2
     end
     
-    potential_deps = for i <- 1..(index-1), do: "chaos_component_#{i}"
+    potential_deps = if index > 1, do: (for i <- 1..(index-1), do: "chaos_component_#{i}"), else: []
     Enum.take_random(potential_deps, min(dependency_count, length(potential_deps)))
   end
   
@@ -779,14 +784,14 @@ defmodule ChaosEngineeringTest do
   end
   
   defp execute_chaos_experiment_internal(experiment, state) do
-    # Simulate chaos experiment execution
+    # Execute chaos experiment without blocking sleep
     start_time = System.monotonic_time()
     
     # Apply chaos based on experiment type
     chaos_effect = apply_chaos_effect(experiment)
     
-    # Simulate system response
-    :timer.sleep(experiment.duration)
+    # Simulate system response immediately (no sleep)
+    system_response = simulate_system_response(experiment, chaos_effect)
     
     # Simulate recovery
     recovery_time = simulate_recovery(experiment, chaos_effect)
@@ -797,7 +802,7 @@ defmodule ChaosEngineeringTest do
     %{
       status: :completed,
       chaos_applied: chaos_effect,
-      system_response: simulate_system_response(experiment, chaos_effect),
+      system_response: system_response,
       recovery_time: recovery_time,
       total_duration: total_time,
       metrics: collect_experiment_metrics(experiment, chaos_effect)

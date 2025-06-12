@@ -48,19 +48,27 @@ defmodule Object.PerformanceMonitor do
       :ok
   """
   def record_metric(object_id, metric_type, value, metadata \\ %{}) do
-    # High-performance metric recording via ETS
-    timestamp = System.monotonic_time(:millisecond)
-    
-    metric_entry = {
-      {object_id, metric_type, timestamp},
-      value,
-      metadata
-    }
-    
-    :ets.insert(@metrics_table, metric_entry)
-    
-    # Check for performance alerts
-    check_performance_alerts(object_id, metric_type, value)
+    # Ensure tables exist before inserting
+    case ensure_tables_exist() do
+      :ok ->
+        # High-performance metric recording via ETS
+        timestamp = System.monotonic_time(:millisecond)
+        
+        metric_entry = {
+          {object_id, metric_type, timestamp},
+          value,
+          metadata
+        }
+        
+        :ets.insert(@metrics_table, metric_entry)
+        
+        # Check for performance alerts
+        check_performance_alerts(object_id, metric_type, value)
+      
+      :error ->
+        Logger.warning("Performance metrics table not available, skipping metric recording")
+        :ok
+    end
   end
   
   @doc """
@@ -123,7 +131,10 @@ defmodule Object.PerformanceMonitor do
   List of active performance alerts with severity levels
   """
   def get_performance_alerts() do
-    :ets.tab2list(@alert_table)
+    case ensure_tables_exist() do
+      :ok -> :ets.tab2list(@alert_table)
+      :error -> []
+    end
   end
   
   @doc """
@@ -234,6 +245,13 @@ defmodule Object.PerformanceMonitor do
   
   # Private functions
   
+  defp ensure_tables_exist do
+    case :ets.whereis(@metrics_table) do
+      :undefined -> :error
+      _ -> :ok
+    end
+  end
+  
   defp setup_telemetry do
     # Attach telemetry handlers for system events
     events = [
@@ -252,13 +270,13 @@ defmodule Object.PerformanceMonitor do
       :telemetry.attach(
         "performance_monitor_#{Enum.join(event, "_")}",
         event,
-        &handle_telemetry_event/4,
+        {__MODULE__, :handle_telemetry_event, []},
         %{}
       )
     end)
   end
   
-  defp handle_telemetry_event(event, measurements, metadata, _config) do
+  def handle_telemetry_event(event, measurements, metadata, _config) do
     case event do
       [:object, :message, :sent] ->
         record_metric(metadata.object_id, :messages_sent, 1, %{
