@@ -1,0 +1,1085 @@
+# Collective Intelligence: Swarm Behavior & Emergent Problem Solving
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"},
+  {:jason, "~> 1.4"},
+  {:nx, "~> 0.7.0"}
+])
+```
+
+## What is Collective Intelligence?
+
+Collective intelligence emerges when individual intelligent agents interact to solve problems that no single agent could handle alone. In our AAOS+OORL system, this happens through:
+
+* **Swarm Coordination**: Decentralized decision-making that creates coherent group behavior
+* **Distributed Problem Decomposition**: Complex problems automatically split across multiple agents
+* **Knowledge Fusion**: Individual learning experiences combine into collective knowledge
+* **Emergent Strategy Formation**: Novel approaches arise from agent interactions
+* **Adaptive Hierarchy**: Leadership and coordination roles emerge based on capability and context
+
+Let's see this collective intelligence in action!
+
+## Step 1: Swarm Coordination System
+
+```elixir
+defmodule SwarmAgent do
+  defstruct [
+    :id,
+    :position,
+    :velocity,
+    :energy,
+    :local_knowledge,
+    :communication_range,
+    :swarm_connections,
+    :role,
+    :behavioral_state,
+    :coordination_memory
+  ]
+  
+  def new(id, position) do
+    %__MODULE__{
+      id: id,
+      position: position,
+      velocity: {0.0, 0.0},
+      energy: 100,
+      local_knowledge: %{
+        explored_areas: MapSet.new(),
+        resource_locations: [],
+        danger_zones: [],
+        optimal_paths: %{}
+      },
+      communication_range: 5.0,
+      swarm_connections: MapSet.new(),
+      role: :explorer,  # :explorer, :scout, :coordinator, :specialist
+      behavioral_state: :searching,  # :searching, :converging, :exploiting, :coordinating
+      coordination_memory: []
+    }
+  end
+  
+  def update_swarm_connections(agent, all_agents) do
+    # Find agents within communication range
+    nearby_agents = Enum.filter(all_agents, fn other ->
+      other.id != agent.id and 
+      calculate_distance(agent.position, other.position) <= agent.communication_range
+    end)
+    
+    connections = MapSet.new(Enum.map(nearby_agents, & &1.id))
+    
+    %{agent | swarm_connections: connections}
+  end
+  
+  defp calculate_distance({x1, y1}, {x2, y2}) do
+    :math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
+  end
+  
+  def share_knowledge(sender, receivers, all_agents) do
+    # Share local knowledge with connected agents
+    knowledge_packets = %{
+      from: sender.id,
+      explored_areas: Enum.take(MapSet.to_list(sender.local_knowledge.explored_areas), 10),
+      resource_locations: Enum.take(sender.local_knowledge.resource_locations, 5),
+      danger_zones: sender.local_knowledge.danger_zones,
+      timestamp: DateTime.utc_now()
+    }
+    
+    # Update receivers with shared knowledge
+    updated_agents = Enum.map(all_agents, fn agent ->
+      if agent.id in receivers do
+        integrate_shared_knowledge(agent, knowledge_packets)
+      else
+        agent
+      end
+    end)
+    
+    IO.puts("📡 #{sender.id} shared knowledge with #{MapSet.size(receivers)} agents")
+    updated_agents
+  end
+  
+  defp integrate_shared_knowledge(agent, knowledge_packet) do
+    # Integrate external knowledge with local knowledge
+    updated_explored = MapSet.union(
+      agent.local_knowledge.explored_areas,
+      MapSet.new(knowledge_packet.explored_areas)
+    )
+    
+    # Merge resource locations (avoiding duplicates)
+    updated_resources = (agent.local_knowledge.resource_locations ++ knowledge_packet.resource_locations)
+                       |> Enum.uniq()
+                       |> Enum.take(20)  # Limit memory
+    
+    updated_dangers = (agent.local_knowledge.danger_zones ++ knowledge_packet.danger_zones)
+                     |> Enum.uniq()
+                     |> Enum.take(10)
+    
+    updated_knowledge = %{agent.local_knowledge |
+      explored_areas: updated_explored,
+      resource_locations: updated_resources,
+      danger_zones: updated_dangers
+    }
+    
+    # Record the knowledge sharing event
+    coordination_event = %{
+      type: :knowledge_received,
+      from: knowledge_packet.from,
+      timestamp: knowledge_packet.timestamp,
+      value: length(knowledge_packet.explored_areas) + length(knowledge_packet.resource_locations)
+    }
+    
+    updated_memory = [coordination_event | Enum.take(agent.coordination_memory, 19)]
+    
+    %{agent |
+      local_knowledge: updated_knowledge,
+      coordination_memory: updated_memory
+    }
+  end
+  
+  def determine_swarm_behavior(agent, swarm_state, global_objective) do
+    # Decide individual behavior based on swarm state and personal situation
+    local_factors = analyze_local_situation(agent)
+    swarm_factors = analyze_swarm_situation(agent, swarm_state)
+    
+    # Behavioral decision matrix
+    new_behavior = cond do
+      # Emergency coordination
+      swarm_factors.cohesion < 0.3 and agent.role == :coordinator ->
+        :coordinating
+      
+      # Resource exploitation
+      length(agent.local_knowledge.resource_locations) > 3 and local_factors.energy < 50 ->
+        :exploiting
+      
+      # Convergence for information sharing
+      swarm_factors.information_density > 0.7 and local_factors.isolation < 0.3 ->
+        :converging
+      
+      # Default exploration
+      true ->
+        :searching
+    end
+    
+    # Determine movement direction based on behavior
+    new_velocity = calculate_behavioral_velocity(agent, new_behavior, swarm_state)
+    
+    IO.puts("🐝 #{agent.id} (#{agent.role}) → behavior: #{new_behavior}")
+    
+    %{agent |
+      behavioral_state: new_behavior,
+      velocity: new_velocity
+    }
+  end
+  
+  defp analyze_local_situation(agent) do
+    %{
+      energy: agent.energy,
+      knowledge_richness: MapSet.size(agent.local_knowledge.explored_areas) + length(agent.local_knowledge.resource_locations),
+      isolation: if MapSet.size(agent.swarm_connections) == 0, do: 1.0, else: 1.0 / MapSet.size(agent.swarm_connections),
+      recent_discoveries: length(Enum.filter(agent.coordination_memory, fn event ->
+        event.type in [:resource_found, :area_explored] and
+        DateTime.diff(DateTime.utc_now(), event.timestamp, :second) < 60
+      end))
+    }
+  end
+  
+  defp analyze_swarm_situation(agent, swarm_state) do
+    connected_agents = MapSet.size(agent.swarm_connections)
+    total_agents = map_size(swarm_state.agents)
+    
+    # Calculate swarm cohesion (how connected the swarm is)
+    cohesion = if total_agents > 1, do: connected_agents / (total_agents - 1), else: 1.0
+    
+    # Information density (how much knowledge is flowing)
+    recent_communications = length(Enum.filter(agent.coordination_memory, fn event ->
+      event.type == :knowledge_received and
+      DateTime.diff(DateTime.utc_now(), event.timestamp, :second) < 30
+    end))
+    
+    information_density = min(1.0, recent_communications / 5.0)
+    
+    %{
+      cohesion: cohesion,
+      information_density: information_density,
+      swarm_size: total_agents,
+      local_connectivity: connected_agents
+    }
+  end
+  
+  defp calculate_behavioral_velocity(agent, behavior, swarm_state) do
+    {current_vx, current_vy} = agent.velocity
+    
+    case behavior do
+      :searching ->
+        # Exploration with some randomness
+        exploration_direction = {:rand.uniform() - 0.5, :rand.uniform() - 0.5}
+        normalize_velocity(exploration_direction, 2.0)
+      
+      :converging ->
+        # Move toward center of nearby agents
+        if MapSet.size(agent.swarm_connections) > 0 do
+          center = calculate_swarm_center(agent, swarm_state)
+          direction = vector_subtract(center, agent.position)
+          normalize_velocity(direction, 1.5)
+        else
+          {current_vx, current_vy}
+        end
+      
+      :exploiting ->
+        # Move toward known resources
+        if length(agent.local_knowledge.resource_locations) > 0 do
+          nearest_resource = Enum.min_by(agent.local_knowledge.resource_locations, fn resource ->
+            calculate_distance(agent.position, resource)
+          end)
+          direction = vector_subtract(nearest_resource, agent.position)
+          normalize_velocity(direction, 1.0)
+        else
+          {current_vx, current_vy}
+        end
+      
+      :coordinating ->
+        # Maintain central position for communication
+        {current_vx * 0.5, current_vy * 0.5}  # Reduce movement
+    end
+  end
+  
+  defp calculate_swarm_center(agent, swarm_state) do
+    connected_positions = agent.swarm_connections
+                         |> MapSet.to_list()
+                         |> Enum.map(fn id -> swarm_state.agents[id].position end)
+                         |> Enum.filter(& &1 != nil)
+    
+    if length(connected_positions) > 0 do
+      total_x = Enum.sum(Enum.map(connected_positions, &elem(&1, 0)))
+      total_y = Enum.sum(Enum.map(connected_positions, &elem(&1, 1)))
+      count = length(connected_positions)
+      {total_x / count, total_y / count}
+    else
+      agent.position
+    end
+  end
+  
+  defp vector_subtract({x1, y1}, {x2, y2}), do: {x1 - x2, y1 - y2}
+  
+  defp normalize_velocity({vx, vy}, max_speed) do
+    magnitude = :math.sqrt(vx * vx + vy * vy)
+    if magnitude > 0 do
+      scale = min(max_speed, magnitude) / magnitude
+      {vx * scale, vy * scale}
+    else
+      {0, 0}
+    end
+  end
+  
+  def move_agent(agent) do
+    {vx, vy} = agent.velocity
+    {x, y} = agent.position
+    new_position = {x + vx, y + vy}
+    
+    # Update explored areas
+    explored_cell = {round(x), round(y)}
+    updated_explored = MapSet.put(agent.local_knowledge.explored_areas, explored_cell)
+    
+    # Check for resource discovery
+    {updated_resources, discovery_event} = check_resource_discovery(new_position, agent.local_knowledge.resource_locations)
+    
+    updated_knowledge = %{agent.local_knowledge |
+      explored_areas: updated_explored,
+      resource_locations: updated_resources
+    }
+    
+    # Update coordination memory if discovery made
+    updated_memory = if discovery_event do
+      [discovery_event | agent.coordination_memory]
+    else
+      agent.coordination_memory
+    end
+    
+    # Consume energy for movement
+    energy_cost = :math.sqrt(vx * vx + vy * vy) * 2
+    new_energy = max(0, agent.energy - energy_cost)
+    
+    %{agent |
+      position: new_position,
+      energy: new_energy,
+      local_knowledge: updated_knowledge,
+      coordination_memory: updated_memory
+    }
+  end
+  
+  defp check_resource_discovery(position, known_resources) do
+    # Simulate resource discovery
+    if :rand.uniform() < 0.05 do  # 5% chance of finding resource
+      new_resource = {
+        round(elem(position, 0)), 
+        round(elem(position, 1)), 
+        :rand.uniform() * 100  # Resource value
+      }
+      
+      # Check if this resource is already known
+      if not Enum.any?(known_resources, fn {x, y, _} -> 
+        {x, y} == {elem(new_resource, 0), elem(new_resource, 1)} 
+      end) do
+        discovery_event = %{
+          type: :resource_found,
+          location: {elem(new_resource, 0), elem(new_resource, 1)},
+          value: elem(new_resource, 2),
+          timestamp: DateTime.utc_now()
+        }
+        
+        {[new_resource | known_resources], discovery_event}
+      else
+        {known_resources, nil}
+      end
+    else
+      {known_resources, nil}
+    end
+  end
+  
+  def display_agent_status(agent) do
+    IO.puts("🐝 Agent #{agent.id}:")
+    IO.puts("   Position: #{inspect(agent.position)}")
+    IO.puts("   Behavior: #{agent.behavioral_state} (#{agent.role})")
+    IO.puts("   Energy: #{Float.round(agent.energy, 1)}")
+    IO.puts("   Connections: #{MapSet.size(agent.swarm_connections)}")
+    IO.puts("   Explored Areas: #{MapSet.size(agent.local_knowledge.explored_areas)}")
+    IO.puts("   Known Resources: #{length(agent.local_knowledge.resource_locations)}")
+    
+    if length(agent.coordination_memory) > 0 do
+      recent_events = Enum.take(agent.coordination_memory, 3)
+      IO.puts("   Recent Events:")
+      Enum.each(recent_events, fn event ->
+        IO.puts("     #{event.type}: #{inspect(Map.get(event, :location, ""))}")
+      end)
+    end
+  end
+end
+
+# Create a swarm of agents
+swarm_size = 8
+swarm_agents = for i <- 1..swarm_size do
+  # Distribute agents randomly in a 20x20 area
+  position = {:rand.uniform() * 20 - 10, :rand.uniform() * 20 - 10}
+  SwarmAgent.new(:"agent_#{i}", position)
+end
+
+IO.puts("🌍 Created swarm of #{swarm_size} agents")
+Enum.each(swarm_agents, &SwarmAgent.display_agent_status/1)
+```
+
+## Step 2: Swarm Simulation
+
+```elixir
+defmodule SwarmSimulation do
+  def run_simulation(agents, steps \\ 20) do
+    IO.puts("\n🚀 Starting swarm simulation for #{steps} steps...")
+    
+    Enum.reduce(1..steps, agents, fn step, current_agents ->
+      IO.puts("\n--- Step #{step} ---")
+      
+      # Create swarm state for global coordination
+      swarm_state = %{
+        agents: Map.new(current_agents, fn agent -> {agent.id, agent} end),
+        step: step,
+        total_resources_found: count_total_resources(current_agents),
+        average_energy: calculate_average_energy(current_agents)
+      }
+      
+      # Update connections for all agents
+      agents_with_connections = Enum.map(current_agents, fn agent ->
+        SwarmAgent.update_swarm_connections(agent, current_agents)
+      end)
+      
+      # Determine behaviors based on swarm state
+      agents_with_behaviors = Enum.map(agents_with_connections, fn agent ->
+        SwarmAgent.determine_swarm_behavior(agent, swarm_state, :resource_discovery)
+      end)
+      
+      # Share knowledge between connected agents
+      agents_after_communication = perform_knowledge_sharing(agents_with_behaviors)
+      
+      # Move all agents
+      moved_agents = Enum.map(agents_after_communication, &SwarmAgent.move_agent/1)
+      
+      # Display swarm status every 5 steps
+      if rem(step, 5) == 0 do
+        display_swarm_status(moved_agents, swarm_state)
+      end
+      
+      moved_agents
+    end)
+  end
+  
+  defp count_total_resources(agents) do
+    agents
+    |> Enum.flat_map(fn agent -> agent.local_knowledge.resource_locations end)
+    |> Enum.uniq_by(fn {x, y, _value} -> {x, y} end)
+    |> length()
+  end
+  
+  defp calculate_average_energy(agents) do
+    total_energy = Enum.sum(Enum.map(agents, & &1.energy))
+    total_energy / length(agents)
+  end
+  
+  defp perform_knowledge_sharing(agents) do
+    # Each agent shares knowledge with connected agents
+    Enum.reduce(agents, agents, fn agent, acc_agents ->
+      if MapSet.size(agent.swarm_connections) > 0 and :rand.uniform() < 0.3 do
+        # 30% chance to share knowledge each step
+        SwarmAgent.share_knowledge(agent, agent.swarm_connections, acc_agents)
+      else
+        acc_agents
+      end
+    end)
+  end
+  
+  defp display_swarm_status(agents, swarm_state) do
+    IO.puts("\n📊 Swarm Status (Step #{swarm_state.step}):")
+    IO.puts("   Total Unique Resources Found: #{swarm_state.total_resources_found}")
+    IO.puts("   Average Energy: #{Float.round(swarm_state.average_energy, 1)}")
+    
+    # Analyze swarm coordination
+    total_connections = Enum.sum(Enum.map(agents, fn agent -> MapSet.size(agent.swarm_connections) end))
+    max_possible_connections = length(agents) * (length(agents) - 1)
+    connectivity = if max_possible_connections > 0, do: total_connections / max_possible_connections, else: 0
+    
+    IO.puts("   Swarm Connectivity: #{Float.round(connectivity * 100, 1)}%")
+    
+    # Behavior distribution
+    behavior_counts = agents
+                     |> Enum.group_by(& &1.behavioral_state)
+                     |> Enum.map(fn {behavior, agents_list} -> {behavior, length(agents_list)} end)
+    
+    IO.puts("   Behavior Distribution:")
+    Enum.each(behavior_counts, fn {behavior, count} ->
+      IO.puts("     #{behavior}: #{count} agents")
+    end)
+    
+    # Show some individual agent status
+    IO.puts("\n   Sample Agent Details:")
+    agents
+    |> Enum.take(3)
+    |> Enum.each(&SwarmAgent.display_agent_status/1)
+  end
+  
+  def analyze_emergence(initial_agents, final_agents) do
+    IO.puts("\n🔍 Emergent Behavior Analysis:")
+    
+    # Collective knowledge growth
+    initial_total_knowledge = count_total_knowledge(initial_agents)
+    final_total_knowledge = count_total_knowledge(final_agents)
+    knowledge_growth = final_total_knowledge - initial_total_knowledge
+    
+    IO.puts("   Collective Knowledge Growth: #{knowledge_growth} new discoveries")
+    
+    # Information distribution efficiency
+    knowledge_distribution = analyze_knowledge_distribution(final_agents)
+    IO.puts("   Knowledge Distribution Efficiency: #{Float.round(knowledge_distribution * 100, 1)}%")
+    
+    # Coordination patterns
+    coordination_patterns = analyze_coordination_patterns(final_agents)
+    IO.puts("   Emergent Coordination Patterns:")
+    Enum.each(coordination_patterns, fn {pattern, frequency} ->
+      IO.puts("     #{pattern}: #{frequency} occurrences")
+    end)
+    
+    # Specialization emergence
+    role_specialization = analyze_role_specialization(final_agents)
+    IO.puts("   Role Specialization:")
+    Enum.each(role_specialization, fn {agent_id, specialization_score} ->
+      IO.puts("     #{agent_id}: #{Float.round(specialization_score * 100, 1)}% specialized")
+    end)
+  end
+  
+  defp count_total_knowledge(agents) do
+    agents
+    |> Enum.flat_map(fn agent -> 
+      MapSet.to_list(agent.local_knowledge.explored_areas) ++ 
+      agent.local_knowledge.resource_locations
+    end)
+    |> Enum.uniq()
+    |> length()
+  end
+  
+  defp analyze_knowledge_distribution(agents) do
+    # Measure how evenly knowledge is distributed across the swarm
+    all_knowledge = agents
+                   |> Enum.flat_map(fn agent -> 
+                     MapSet.to_list(agent.local_knowledge.explored_areas) ++ 
+                     Enum.map(agent.local_knowledge.resource_locations, fn {x, y, _} -> {x, y} end)
+                   end)
+                   |> Enum.uniq()
+    
+    if length(all_knowledge) == 0 do
+      0.0
+    else
+      knowledge_counts = Enum.map(agents, fn agent ->
+        agent_knowledge = MapSet.to_list(agent.local_knowledge.explored_areas) ++ 
+                         Enum.map(agent.local_knowledge.resource_locations, fn {x, y, _} -> {x, y} end)
+        length(Enum.uniq(agent_knowledge))
+      end)
+      
+      avg_knowledge = Enum.sum(knowledge_counts) / length(knowledge_counts)
+      max_possible = length(all_knowledge)
+      
+      avg_knowledge / max_possible
+    end
+  end
+  
+  defp analyze_coordination_patterns(agents) do
+    # Analyze patterns in coordination memory
+    all_coordination_events = agents
+                              |> Enum.flat_map(& &1.coordination_memory)
+                              |> Enum.group_by(& &1.type)
+                              |> Enum.map(fn {type, events} -> {type, length(events)} end)
+    
+    all_coordination_events
+  end
+  
+  defp analyze_role_specialization(agents) do
+    # Measure how specialized each agent has become
+    Enum.map(agents, fn agent ->
+      # Specialization based on behavior consistency and knowledge focus
+      behavior_consistency = calculate_behavior_consistency(agent)
+      knowledge_focus = calculate_knowledge_focus(agent)
+      
+      specialization_score = (behavior_consistency + knowledge_focus) / 2
+      {agent.id, specialization_score}
+    end)
+  end
+  
+  defp calculate_behavior_consistency(agent) do
+    # Simplified: agents that maintain similar behaviors are more specialized
+    recent_behaviors = agent.coordination_memory
+                      |> Enum.filter(fn event -> event.type in [:behavior_change, :role_adaptation] end)
+                      |> length()
+    
+    # Fewer behavior changes = higher consistency
+    max(0.0, 1.0 - recent_behaviors * 0.2)
+  end
+  
+  defp calculate_knowledge_focus(agent) do
+    # Agents with focused knowledge domains are more specialized
+    total_knowledge = MapSet.size(agent.local_knowledge.explored_areas) + 
+                     length(agent.local_knowledge.resource_locations)
+    
+    if total_knowledge > 0 do
+      # Simplified focus measure based on knowledge density
+      explored_area_spread = calculate_area_spread(agent.local_knowledge.explored_areas)
+      max(0.0, 1.0 - explored_area_spread / 20.0)  # Normalize by max expected spread
+    else
+      0.0
+    end
+  end
+  
+  defp calculate_area_spread(explored_areas) do
+    if MapSet.size(explored_areas) <= 1 do
+      0.0
+    else
+      positions = MapSet.to_list(explored_areas)
+      xs = Enum.map(positions, &elem(&1, 0))
+      ys = Enum.map(positions, &elem(&1, 1))
+      
+      x_range = Enum.max(xs) - Enum.min(xs)
+      y_range = Enum.max(ys) - Enum.min(ys)
+      
+      :math.sqrt(x_range * x_range + y_range * y_range)
+    end
+  end
+end
+
+# Run the swarm simulation
+final_swarm = SwarmSimulation.run_simulation(swarm_agents, 25)
+
+# Analyze emergent behaviors
+SwarmSimulation.analyze_emergence(swarm_agents, final_swarm)
+```
+
+## Step 3: Complex Problem Decomposition
+
+```elixir
+defmodule CollectiveProblemSolver do
+  defstruct [
+    :problem_id,
+    :problem_description,
+    :complexity_level,
+    :required_capabilities,
+    :subproblems,
+    :solution_components,
+    :solving_agents,
+    :coordination_strategy
+  ]
+  
+  def new(problem_description, complexity_level) do
+    %__MODULE__{
+      problem_id: :crypto.strong_rand_bytes(4) |> Base.encode16(),
+      problem_description: problem_description,
+      complexity_level: complexity_level,
+      required_capabilities: determine_required_capabilities(problem_description),
+      subproblems: [],
+      solution_components: %{},
+      solving_agents: [],
+      coordination_strategy: :distributed
+    }
+  end
+  
+  defp determine_required_capabilities(description) do
+    # Analyze problem description to identify required capabilities
+    cond do
+      String.contains?(description, ["explore", "search", "find"]) ->
+        [:exploration, :pattern_recognition]
+      
+      String.contains?(description, ["optimize", "efficiency", "performance"]) ->
+        [:optimization, :analysis, :coordination]
+      
+      String.contains?(description, ["resource", "allocation", "distribution"]) ->
+        [:resource_management, :coordination, :decision_making]
+      
+      String.contains?(description, ["learn", "adapt", "improve"]) ->
+        [:learning, :adaptation, :meta_cognition]
+      
+      true ->
+        [:general_problem_solving, :coordination]
+    end
+  end
+  
+  def decompose_problem(problem, available_agents) do
+    IO.puts("🧩 Decomposing problem: #{problem.problem_description}")
+    
+    # Analyze problem complexity and decompose into subproblems
+    subproblems = case problem.complexity_level do
+      :simple ->
+        [%{
+          id: 1,
+          description: "Direct solution approach",
+          required_agents: 1,
+          required_capabilities: problem.required_capabilities,
+          dependencies: []
+        }]
+      
+      :moderate ->
+        [
+          %{
+            id: 1,
+            description: "Information gathering phase",
+            required_agents: 2,
+            required_capabilities: [:exploration, :analysis],
+            dependencies: []
+          },
+          %{
+            id: 2,
+            description: "Solution synthesis phase",
+            required_agents: 1,
+            required_capabilities: [:coordination, :decision_making],
+            dependencies: [1]
+          }
+        ]
+      
+      :complex ->
+        [
+          %{
+            id: 1,
+            description: "Problem analysis and constraint identification",
+            required_agents: 2,
+            required_capabilities: [:analysis, :pattern_recognition],
+            dependencies: []
+          },
+          %{
+            id: 2,
+            description: "Resource and capability assessment",
+            required_agents: 2,
+            required_capabilities: [:resource_management, :exploration],
+            dependencies: []
+          },
+          %{
+            id: 3,
+            description: "Solution strategy formulation", 
+            required_agents: 1,
+            required_capabilities: [:coordination, :decision_making],
+            dependencies: [1, 2]
+          },
+          %{
+            id: 4,
+            description: "Implementation and validation",
+            required_agents: 3,
+            required_capabilities: [:optimization, :coordination],
+            dependencies: [3]
+          }
+        ]
+    end
+    
+    # Assign agents to subproblems based on capabilities
+    assigned_subproblems = assign_agents_to_subproblems(subproblems, available_agents)
+    
+    updated_problem = %{problem |
+      subproblems: assigned_subproblems,
+      solving_agents: Enum.flat_map(assigned_subproblems, fn sp -> sp.assigned_agents end) |> Enum.uniq()
+    }
+    
+    IO.puts("   Decomposed into #{length(subproblems)} subproblems")
+    IO.puts("   Total agents involved: #{length(updated_problem.solving_agents)}")
+    
+    updated_problem
+  end
+  
+  defp assign_agents_to_subproblems(subproblems, available_agents) do
+    Enum.map(subproblems, fn subproblem ->
+      # Find agents with required capabilities
+      suitable_agents = Enum.filter(available_agents, fn agent ->
+        has_required_capabilities?(agent, subproblem.required_capabilities)
+      end)
+      
+      # Select best agents for this subproblem
+      selected_agents = suitable_agents
+                       |> Enum.sort_by(fn agent -> 
+                         calculate_capability_match(agent, subproblem.required_capabilities)
+                       end, :desc)
+                       |> Enum.take(subproblem.required_agents)
+      
+      %{subproblem | assigned_agents: Enum.map(selected_agents, & &1.id)}
+    end)
+  end
+  
+  defp has_required_capabilities?(agent, required_capabilities) do
+    # Simplified capability checking
+    agent_capabilities = get_agent_capabilities(agent)
+    
+    Enum.all?(required_capabilities, fn req_cap ->
+      Map.get(agent_capabilities, req_cap, 0.0) > 0.3
+    end)
+  end
+  
+  defp get_agent_capabilities(agent) do
+    # Extract capabilities from agent state (simplified)
+    base_capabilities = %{
+      exploration: 0.6,
+      analysis: 0.5,
+      coordination: 0.4,
+      resource_management: 0.5,
+      optimization: 0.4,
+      decision_making: 0.5,
+      pattern_recognition: 0.6,
+      learning: 0.5,
+      adaptation: 0.4,
+      meta_cognition: 0.3,
+      general_problem_solving: 0.5
+    }
+    
+    # Adjust based on agent's experience and role
+    adjustments = case agent.role do
+      :coordinator -> %{coordination: 0.9, decision_making: 0.8}
+      :explorer -> %{exploration: 0.9, pattern_recognition: 0.8}
+      _ -> %{}
+    end
+    
+    Map.merge(base_capabilities, adjustments)
+  end
+  
+  defp calculate_capability_match(agent, required_capabilities) do
+    agent_capabilities = get_agent_capabilities(agent)
+    
+    Enum.map(required_capabilities, fn req_cap ->
+      Map.get(agent_capabilities, req_cap, 0.0)
+    end)
+    |> Enum.sum()
+    |> (fn total -> total / length(required_capabilities) end).()
+  end
+  
+  def solve_subproblem(subproblem, assigned_agents) do
+    IO.puts("⚡ Solving subproblem #{subproblem.id}: #{subproblem.description}")
+    IO.puts("   Assigned agents: #{Enum.join(subproblem.assigned_agents, ", ")}")
+    
+    # Simulate collaborative problem solving
+    solving_process = simulate_collaborative_solving(subproblem, assigned_agents)
+    
+    # Generate solution component
+    solution_component = %{
+      subproblem_id: subproblem.id,
+      solution_approach: solving_process.approach,
+      quality_score: solving_process.quality,
+      confidence_level: solving_process.confidence,
+      contributing_agents: subproblem.assigned_agents,
+      solving_time: solving_process.time_taken,
+      insights: solving_process.insights
+    }
+    
+    IO.puts("   Solution quality: #{Float.round(solution_component.quality_score * 100, 1)}%")
+    IO.puts("   Confidence: #{Float.round(solution_component.confidence_level * 100, 1)}%")
+    
+    solution_component
+  end
+  
+  defp simulate_collaborative_solving(subproblem, assigned_agents) do
+    # Simulate the collaborative problem-solving process
+    
+    # Calculate collective capability
+    collective_capability = length(subproblem.assigned_agents) * 0.2 + 0.4
+    
+    # Simulate coordination overhead
+    coordination_factor = if length(subproblem.assigned_agents) > 1 do
+      1.0 - (length(subproblem.assigned_agents) - 1) * 0.1
+    else
+      1.0
+    end
+    
+    # Calculate solution quality
+    base_quality = collective_capability * coordination_factor
+    randomness = (:rand.uniform() - 0.5) * 0.2  # ±10% randomness
+    final_quality = max(0.1, min(1.0, base_quality + randomness))
+    
+    %{
+      approach: determine_solution_approach(subproblem),
+      quality: final_quality,
+      confidence: final_quality * 0.9,  # Slightly lower than quality
+      time_taken: :rand.uniform() * 10 + 5,  # 5-15 time units
+      insights: generate_solution_insights(subproblem, final_quality)
+    }
+  end
+  
+  defp determine_solution_approach(subproblem) do
+    approaches = [
+      "Systematic analysis and decomposition",
+      "Pattern matching with known solutions",
+      "Iterative refinement approach",
+      "Collaborative consensus building",
+      "Experimental validation method"
+    ]
+    
+    Enum.random(approaches)
+  end
+  
+  defp generate_solution_insights(subproblem, quality) do
+    base_insights = [
+      "Effective collaboration between agents",
+      "Leveraged complementary capabilities",
+      "Identified key constraints early"
+    ]
+    
+    quality_insights = if quality > 0.8 do
+      ["Achieved synergistic problem solving", "Emergent solution properties discovered"]
+    else
+      ["Coordination challenges encountered", "Some capability gaps identified"]
+    end
+    
+    base_insights ++ quality_insights
+  end
+  
+  def synthesize_solution(problem) do
+    IO.puts("🔬 Synthesizing final solution for: #{problem.problem_description}")
+    
+    # Check if all subproblems have solutions
+    solved_subproblems = Map.keys(problem.solution_components)
+    total_subproblems = length(problem.subproblems)
+    
+    if length(solved_subproblems) == total_subproblems do
+      # Combine solution components
+      overall_quality = problem.solution_components
+                       |> Map.values()
+                       |> Enum.map(& &1.quality_score)
+                       |> Enum.sum()
+                       |> (fn total -> total / total_subproblems end).()
+      
+      overall_confidence = problem.solution_components
+                          |> Map.values()
+                          |> Enum.map(& &1.confidence_level)
+                          |> Enum.sum()
+                          |> (fn total -> total / total_subproblems end).()
+      
+      total_solving_time = problem.solution_components
+                          |> Map.values()
+                          |> Enum.map(& &1.solving_time)
+                          |> Enum.max()  # Parallel solving time
+      
+      all_insights = problem.solution_components
+                    |> Map.values()
+                    |> Enum.flat_map(& &1.insights)
+                    |> Enum.uniq()
+      
+      final_solution = %{
+        problem_id: problem.problem_id,
+        solution_type: :collective,
+        overall_quality: overall_quality,
+        confidence_level: overall_confidence,
+        total_time: total_solving_time,
+        participating_agents: problem.solving_agents,
+        solution_components: Map.values(problem.solution_components),
+        key_insights: all_insights,
+        emergent_properties: detect_emergent_properties(problem.solution_components)
+      }
+      
+      IO.puts("✅ Solution synthesized!")
+      IO.puts("   Overall quality: #{Float.round(overall_quality * 100, 1)}%")
+      IO.puts("   Confidence: #{Float.round(overall_confidence * 100, 1)}%")
+      IO.puts("   Total agents: #{length(problem.solving_agents)}")
+      IO.puts("   Solving time: #{Float.round(total_solving_time, 1)} units")
+      
+      if length(final_solution.emergent_properties) > 0 do
+        IO.puts("   Emergent properties detected:")
+        Enum.each(final_solution.emergent_properties, fn prop ->
+          IO.puts("     - #{prop}")
+        end)
+      end
+      
+      {:success, final_solution}
+    else
+      missing_solutions = total_subproblems - length(solved_subproblems)
+      {:incomplete, "#{missing_solutions} subproblems still need solutions"}
+    end
+  end
+  
+  defp detect_emergent_properties(solution_components) do
+    # Detect emergent properties from combined solutions
+    all_approaches = solution_components
+                    |> Map.values()
+                    |> Enum.map(& &1.solution_approach)
+                    |> Enum.uniq()
+    
+    emergent_properties = []
+    
+    # Cross-pollination of approaches
+    emergent_properties = if length(all_approaches) > 2 do
+      ["Cross-method synergy achieved" | emergent_properties]
+    else
+      emergent_properties
+    end
+    
+    # High collective quality
+    avg_quality = solution_components
+                 |> Map.values()
+                 |> Enum.map(& &1.quality_score)
+                 |> Enum.sum()
+                 |> (fn total -> total / map_size(solution_components) end).()
+    
+    emergent_properties = if avg_quality > 0.8 do
+      ["Collective intelligence amplification" | emergent_properties]
+    else
+      emergent_properties
+    end
+    
+    # Novel insight combinations
+    total_insights = solution_components
+                    |> Map.values()
+                    |> Enum.flat_map(& &1.insights)
+                    |> length()
+    
+    emergent_properties = if total_insights > map_size(solution_components) * 3 do
+      ["Novel insight synthesis" | emergent_properties]
+    else
+      emergent_properties
+    end
+    
+    emergent_properties
+  end
+end
+
+# Create complex problems for collective solving
+complex_problems = [
+  CollectiveProblemSolver.new("Optimize resource allocation across a dynamic network with changing demands", :complex),
+  CollectiveProblemSolver.new("Develop adaptive exploration strategy for unknown environment", :moderate),
+  CollectiveProblemSolver.new("Learn optimal coordination protocols for multi-agent task execution", :complex)
+]
+
+# Use our swarm agents as problem solvers
+problem_solving_agents = final_swarm
+                        |> Enum.with_index()
+                        |> Enum.map(fn {agent, index} ->
+                          # Assign different roles for problem solving
+                          role = case rem(index, 4) do
+                            0 -> :coordinator
+                            1 -> :explorer  
+                            2 -> :analyzer
+                            3 -> :specialist
+                          end
+                          %{agent | role: role}
+                        end)
+
+IO.puts("🧠 Starting Collective Problem Solving...")
+
+# Solve each problem
+solved_problems = Enum.map(complex_problems, fn problem ->
+  IO.puts("\n" <> String.duplicate("=", 60))
+  
+  # Decompose the problem
+  decomposed_problem = CollectiveProblemSolver.decompose_problem(problem, problem_solving_agents)
+  
+  # Solve subproblems (respecting dependencies)
+  problem_with_solutions = solve_all_subproblems(decomposed_problem)
+  
+  # Synthesize final solution
+  case CollectiveProblemSolver.synthesize_solution(problem_with_solutions) do
+    {:success, solution} -> solution
+    {:incomplete, reason} -> 
+      IO.puts("❌ Problem solving incomplete: #{reason}")
+      nil
+  end
+end)
+
+# Helper function to solve subproblems in dependency order
+solve_all_subproblems = fn problem ->
+  # Simple dependency resolution (solve in order for demo)
+  solved_components = Enum.reduce(problem.subproblems, %{}, fn subproblem, acc ->
+    solution = CollectiveProblemSolver.solve_subproblem(subproblem, problem_solving_agents)
+    Map.put(acc, subproblem.id, solution)
+  end)
+  
+  %{problem | solution_components: solved_components}
+end
+
+IO.puts("\n" <> String.duplicate("=", 60))
+IO.puts("🏆 Collective Problem Solving Results:")
+
+successful_solutions = Enum.filter(solved_problems, & &1 != nil)
+IO.puts("Successfully solved: #{length(successful_solutions)}/#{length(complex_problems)} problems")
+
+if length(successful_solutions) > 0 do
+  avg_quality = successful_solutions
+               |> Enum.map(& &1.overall_quality)
+               |> Enum.sum()
+               |> (fn total -> total / length(successful_solutions) end).()
+  
+  total_agents_used = successful_solutions
+                     |> Enum.flat_map(& &1.participating_agents)
+                     |> Enum.uniq()
+                     |> length()
+  
+  IO.puts("Average solution quality: #{Float.round(avg_quality * 100, 1)}%")
+  IO.puts("Total unique agents utilized: #{total_agents_used}")
+  
+  # Analyze collective intelligence characteristics
+  IO.puts("\n🔍 Collective Intelligence Analysis:")
+  
+  all_emergent_properties = successful_solutions
+                           |> Enum.flat_map(& &1.emergent_properties)
+                           |> Enum.frequencies()
+  
+  if map_size(all_emergent_properties) > 0 do
+    IO.puts("Emergent Properties Observed:")
+    Enum.each(all_emergent_properties, fn {property, frequency} ->
+      IO.puts("  #{property}: #{frequency} occurrences")
+    end)
+  end
+  
+  # Measure collective vs individual capability
+  individual_baseline = 0.5  # Estimated individual agent capability
+  collective_improvement = avg_quality - individual_baseline
+  
+  IO.puts("Collective intelligence amplification: +#{Float.round(collective_improvement * 100, 1)}% over individual capability")
+end
+```
+
+## Key Collective Intelligence Insights
+
+This demonstration reveals how individual AAOS objects combine to create collective intelligence through:
+
+1. **Swarm Coordination**: Decentralized agents self-organize into coherent collective behaviors
+2. **Knowledge Fusion**: Individual discoveries automatically propagate through the network
+3. **Dynamic Specialization**: Agents adapt their roles based on swarm needs and individual capabilities
+4. **Emergent Problem Solving**: Complex problems decompose naturally across multiple agents
+5. **Adaptive Coordination**: Communication patterns and leadership emerge based on context
+
+The breakthrough is **amplified intelligence** - the collective solves problems no individual could handle while maintaining resilience through distribution!
+
+```elixir
+IO.puts("🎉 Collective Intelligence Demo Complete!")
+IO.puts("Individual objects have become a collective mind!")
+IO.puts("The system exhibits true emergent intelligence beyond any single component!")
+```

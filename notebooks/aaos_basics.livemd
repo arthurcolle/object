@@ -1,0 +1,571 @@
+# AAOS Objects: Interactive Demonstration
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"},
+  {:jason, "~> 1.4"}
+])
+```
+
+## What Are AAOS Objects?
+
+AAOS (Autonomous Agent Object Specification) objects are intelligent, self-contained entities that can:
+- Communicate through structured messages
+- Learn from their interactions
+- Adapt their behavior over time
+- Form relationships (dyads) with other objects
+- Reason about their own state and goals
+
+Let's build one step by step!
+
+## Step 1: Define a Basic Object
+
+```elixir
+defmodule BasicObject do
+  defstruct [
+    :id,
+    :state,
+    :goals,
+    :mailbox,
+    :world_model,
+    :dyads,
+    :learning_rate
+  ]
+  
+  def new(id, initial_state \\ %{}) do
+    %__MODULE__{
+      id: id,
+      state: Map.merge(%{energy: 100, happiness: 50}, initial_state),
+      goals: [%{type: :survival, priority: 0.9}, %{type: :social, priority: 0.6}],
+      mailbox: [],
+      world_model: %{},
+      dyads: %{},
+      learning_rate: 0.1
+    }
+  end
+  
+  def send_message(object, to_id, message_type, content) do
+    message = %{
+      id: :crypto.strong_rand_bytes(4) |> Base.encode16(),
+      from: object.id,
+      to: to_id,
+      type: message_type,
+      content: content,
+      timestamp: DateTime.utc_now()
+    }
+    
+    # In real system, this would route through MessageRouter
+    IO.puts("📤 #{object.id} → #{to_id}: #{message_type} - #{inspect(content)}")
+    
+    %{object | mailbox: [message | object.mailbox]}
+  end
+  
+  def receive_message(object, message) do
+    IO.puts("📥 #{object.id} received: #{message.type} from #{message.from}")
+    
+    # Update world model based on message
+    updated_world_model = Map.put(object.world_model, message.from, %{
+      last_interaction: message.timestamp,
+      relationship: :neutral
+    })
+    
+    # Simple learning: adjust state based on message type
+    state_update = case message.type do
+      :greeting -> %{happiness: min(100, object.state.happiness + 10)}
+      :help_request -> %{energy: max(0, object.state.energy - 5)}
+      :compliment -> %{happiness: min(100, object.state.happiness + 15)}
+      _ -> %{}
+    end
+    
+    updated_state = Map.merge(object.state, state_update)
+    
+    %{object | 
+      world_model: updated_world_model,
+      state: updated_state,
+      mailbox: [message | object.mailbox]
+    }
+  end
+  
+  def display_status(object) do
+    IO.puts("\n🤖 Object #{object.id} Status:")
+    IO.puts("   Energy: #{object.state.energy}/100")
+    IO.puts("   Happiness: #{object.state.happiness}/100") 
+    IO.puts("   Messages: #{length(object.mailbox)}")
+    IO.puts("   Known objects: #{map_size(object.world_model)}")
+  end
+end
+
+# Create our first objects
+alice = BasicObject.new(:alice, %{energy: 80, happiness: 60})
+bob = BasicObject.new(:bob, %{energy: 90, happiness: 40})
+
+BasicObject.display_status(alice)
+BasicObject.display_status(bob)
+```
+
+## Step 2: Object Communication
+
+```elixir
+# Alice sends a greeting to Bob
+alice = BasicObject.send_message(alice, :bob, :greeting, "Hello Bob!")
+
+# Bob receives the message (simulated)
+greeting_message = %{
+  id: "ABC123",
+  from: :alice,
+  to: :bob,
+  type: :greeting,
+  content: "Hello Bob!",
+  timestamp: DateTime.utc_now()
+}
+
+bob = BasicObject.receive_message(bob, greeting_message)
+
+# Bob responds with a compliment
+bob = BasicObject.send_message(bob, :alice, :compliment, "Nice to meet you Alice!")
+
+# Alice receives Bob's compliment
+compliment_message = %{
+  id: "DEF456", 
+  from: :bob,
+  to: :alice,
+  type: :compliment,
+  content: "Nice to meet you Alice!",
+  timestamp: DateTime.utc_now()
+}
+
+alice = BasicObject.receive_message(alice, compliment_message)
+
+IO.puts("\n=== After Communication ===")
+BasicObject.display_status(alice)
+BasicObject.display_status(bob)
+```
+
+## Step 3: Learning and Adaptation
+
+```elixir
+defmodule LearningObject do
+  defstruct [
+    :id,
+    :state,
+    :behavior_patterns,
+    :experience_buffer,
+    :adaptation_rate
+  ]
+  
+  def new(id) do
+    %__MODULE__{
+      id: id,
+      state: %{confidence: 50, sociability: 50},
+      behavior_patterns: %{
+        greeting_success_rate: 0.5,
+        help_willingness: 0.6,
+        conversation_preference: 0.4
+      },
+      experience_buffer: [],
+      adaptation_rate: 0.15
+    }
+  end
+  
+  def learn_from_interaction(object, interaction_type, outcome, reward) do
+    # Record experience
+    experience = %{
+      type: interaction_type,
+      outcome: outcome,
+      reward: reward,
+      timestamp: DateTime.utc_now()
+    }
+    
+    updated_buffer = [experience | Enum.take(object.experience_buffer, 9)]
+    
+    # Adapt behavior based on experience
+    behavior_update = case {interaction_type, outcome} do
+      {:greeting, :positive} -> 
+        %{greeting_success_rate: min(1.0, object.behavior_patterns.greeting_success_rate + object.adaptation_rate)}
+      
+      {:help_request, :accepted} ->
+        %{help_willingness: min(1.0, object.behavior_patterns.help_willingness + object.adaptation_rate)}
+      
+      {:conversation, :engaging} ->
+        %{conversation_preference: min(1.0, object.behavior_patterns.conversation_preference + object.adaptation_rate)}
+      
+      _ -> %{}
+    end
+    
+    updated_patterns = Map.merge(object.behavior_patterns, behavior_update)
+    
+    # Update confidence based on recent success
+    recent_rewards = updated_buffer |> Enum.take(5) |> Enum.map(& &1.reward)
+    avg_recent_reward = if length(recent_rewards) > 0, do: Enum.sum(recent_rewards) / length(recent_rewards), else: 0
+    
+    confidence_delta = (avg_recent_reward - 0.5) * object.adaptation_rate * 20
+    new_confidence = max(0, min(100, object.state.confidence + confidence_delta))
+    
+    updated_state = %{object.state | confidence: new_confidence}
+    
+    %{object |
+      experience_buffer: updated_buffer,
+      behavior_patterns: updated_patterns,
+      state: updated_state
+    }
+  end
+  
+  def display_learning_status(object) do
+    IO.puts("\n🧠 Learning Object #{object.id}:")
+    IO.puts("   Confidence: #{Float.round(object.state.confidence, 1)}")
+    IO.puts("   Greeting Success Rate: #{Float.round(object.behavior_patterns.greeting_success_rate * 100, 1)}%")
+    IO.puts("   Help Willingness: #{Float.round(object.behavior_patterns.help_willingness * 100, 1)}%")
+    IO.puts("   Conversation Preference: #{Float.round(object.behavior_patterns.conversation_preference * 100, 1)}%")
+    IO.puts("   Experiences: #{length(object.experience_buffer)}")
+  end
+end
+
+# Create a learning object
+charlie = LearningObject.new(:charlie)
+LearningObject.display_learning_status(charlie)
+
+# Simulate learning from multiple interactions
+interactions = [
+  {:greeting, :positive, 0.8},
+  {:help_request, :accepted, 0.7},
+  {:conversation, :engaging, 0.9},
+  {:greeting, :positive, 0.6},
+  {:help_request, :declined, 0.2},
+  {:conversation, :boring, 0.3},
+  {:greeting, :positive, 0.8}
+]
+
+charlie_final = Enum.reduce(interactions, charlie, fn {type, outcome, reward}, acc ->
+  LearningObject.learn_from_interaction(acc, type, outcome, reward)
+end)
+
+IO.puts("\n=== After Learning ===")
+LearningObject.display_learning_status(charlie_final)
+```
+
+## Step 4: Object Dyads (Relationships)
+
+```elixir
+defmodule SocialObject do
+  defstruct [:id, :state, :dyads, :social_preferences]
+  
+  def new(id) do
+    %__MODULE__{
+      id: id,
+      state: %{trust: 50, empathy: 50},
+      dyads: %{},
+      social_preferences: %{
+        cooperation_tendency: 0.6,
+        trust_threshold: 0.4,
+        empathy_growth_rate: 0.1
+      }
+    }
+  end
+  
+  def form_dyad(object1, object2, initial_compatibility \\ 0.5) do
+    dyad_id = "#{min(object1.id, object2.id)}_#{max(object1.id, object2.id)}"
+    
+    dyad_spec = %{
+      id: dyad_id,
+      participants: {object1.id, object2.id},
+      compatibility: initial_compatibility,
+      interaction_count: 0,
+      trust_level: 0.5,
+      shared_experiences: [],
+      relationship_type: classify_relationship(initial_compatibility)
+    }
+    
+    object1_updated = %{object1 | dyads: Map.put(object1.dyads, dyad_id, dyad_spec)}
+    object2_updated = %{object2 | dyads: Map.put(object2.dyads, dyad_id, dyad_spec)}
+    
+    IO.puts("🤝 Dyad formed: #{object1.id} ↔ #{object2.id} (#{dyad_spec.relationship_type})")
+    
+    {object1_updated, object2_updated}
+  end
+  
+  def interact_in_dyad(object, other_object_id, interaction_type, success_rate) do
+    dyad_id = "#{min(object.id, other_object_id)}_#{max(object.id, other_object_id)}"
+    
+    case Map.get(object.dyads, dyad_id) do
+      nil -> 
+        IO.puts("❌ No dyad exists between #{object.id} and #{other_object_id}")
+        object
+      
+      dyad ->
+        # Update interaction count and experiences
+        updated_dyad = %{dyad |
+          interaction_count: dyad.interaction_count + 1,
+          shared_experiences: [
+            %{type: interaction_type, success: success_rate > 0.5, timestamp: DateTime.utc_now()}
+            | Enum.take(dyad.shared_experiences, 9)
+          ]
+        }
+        
+        # Adjust trust based on interaction success
+        trust_delta = (success_rate - 0.5) * 0.2
+        new_trust = max(0, min(1.0, updated_dyad.trust_level + trust_delta))
+        
+        # Update compatibility based on trust evolution
+        compatibility_delta = trust_delta * 0.1
+        new_compatibility = max(0, min(1.0, updated_dyad.compatibility + compatibility_delta))
+        
+        final_dyad = %{updated_dyad |
+          trust_level: new_trust,
+          compatibility: new_compatibility,
+          relationship_type: classify_relationship(new_compatibility)
+        }
+        
+        # Update object's empathy based on positive interactions
+        empathy_delta = if success_rate > 0.6, do: object.social_preferences.empathy_growth_rate, else: 0
+        new_empathy = min(100, object.state.empathy + empathy_delta)
+        
+        updated_state = %{object.state | empathy: new_empathy}
+        
+        IO.puts("💬 #{object.id} interacted with #{other_object_id}: #{interaction_type} (success: #{Float.round(success_rate * 100)}%)")
+        
+        %{object |
+          dyads: Map.put(object.dyads, dyad_id, final_dyad),
+          state: updated_state
+        }
+    end
+  end
+  
+  defp classify_relationship(compatibility) when compatibility > 0.8, do: :close_friends
+  defp classify_relationship(compatibility) when compatibility > 0.6, do: :friends  
+  defp classify_relationship(compatibility) when compatibility > 0.4, do: :acquaintances
+  defp classify_relationship(_), do: :strangers
+  
+  def display_social_status(object) do
+    IO.puts("\n👥 Social Object #{object.id}:")
+    IO.puts("   Trust: #{object.state.trust}")
+    IO.puts("   Empathy: #{Float.round(object.state.empathy, 1)}")
+    IO.puts("   Active Dyads: #{map_size(object.dyads)}")
+    
+    Enum.each(object.dyads, fn {_dyad_id, dyad} ->
+      other_id = if elem(dyad.participants, 0) == object.id, 
+                    do: elem(dyad.participants, 1), 
+                    else: elem(dyad.participants, 0)
+      
+      IO.puts("     → #{other_id}: #{dyad.relationship_type} (trust: #{Float.round(dyad.trust_level * 100)}%, interactions: #{dyad.interaction_count})")
+    end)
+  end
+end
+
+# Create social objects and form relationships
+diana = SocialObject.new(:diana)
+evan = SocialObject.new(:evan)
+
+{diana, evan} = SocialObject.form_dyad(diana, evan, 0.6)
+
+# Simulate multiple interactions
+interaction_sequence = [
+  {:diana, :evan, :collaboration, 0.8},
+  {:evan, :diana, :help_offering, 0.9},
+  {:diana, :evan, :conversation, 0.7},
+  {:evan, :diana, :advice_sharing, 0.6},
+  {:diana, :evan, :problem_solving, 0.9}
+]
+
+{diana_final, evan_final} = Enum.reduce(interaction_sequence, {diana, evan}, 
+  fn {actor_id, target_id, interaction, success}, {d, e} ->
+    if actor_id == :diana do
+      {SocialObject.interact_in_dyad(d, target_id, interaction, success), e}
+    else
+      {d, SocialObject.interact_in_dyad(e, target_id, interaction, success)}
+    end
+  end)
+
+IO.puts("\n=== Final Social Status ===")
+SocialObject.display_social_status(diana_final)
+SocialObject.display_social_status(evan_final)
+```
+
+## Step 5: Goal-Directed Behavior
+
+```elixir
+defmodule GoalOrientedObject do
+  defstruct [:id, :state, :goals, :goal_progress, :decision_history]
+  
+  def new(id, initial_goals \\ []) do
+    default_goals = [
+      %{id: :survival, description: "Maintain energy above 20", priority: 0.9, target: 20},
+      %{id: :social_connection, description: "Form at least 2 meaningful relationships", priority: 0.7, target: 2},
+      %{id: :learning, description: "Acquire new skills or knowledge", priority: 0.6, target: 5}
+    ]
+    
+    goals = if length(initial_goals) > 0, do: initial_goals, else: default_goals
+    
+    %__MODULE__{
+      id: id,
+      state: %{energy: 75, social_connections: 0, skills_learned: 0, satisfaction: 50},
+      goals: goals,
+      goal_progress: Map.new(goals, fn goal -> {goal.id, 0} end),
+      decision_history: []
+    }
+  end
+  
+  def evaluate_goals(object) do
+    goal_evaluations = Enum.map(object.goals, fn goal ->
+      current_value = case goal.id do
+        :survival -> object.state.energy
+        :social_connection -> object.state.social_connections
+        :learning -> object.state.skills_learned
+        _ -> 0
+      end
+      
+      progress = min(1.0, current_value / goal.target)
+      satisfaction = if progress >= 1.0, do: 1.0, else: progress * 0.8
+      
+      %{
+        goal: goal,
+        current_value: current_value,
+        progress: progress,
+        satisfaction: satisfaction,
+        urgency: goal.priority * (1.0 - progress)
+      }
+    end)
+    
+    overall_satisfaction = goal_evaluations
+                          |> Enum.map(fn eval -> eval.satisfaction * eval.goal.priority end)
+                          |> Enum.sum()
+                          |> (fn total -> total / Enum.sum(Enum.map(object.goals, & &1.priority)) end).()
+    
+    updated_state = %{object.state | satisfaction: overall_satisfaction * 100}
+    
+    {%{object | state: updated_state}, goal_evaluations}
+  end
+  
+  def make_decision(object, available_actions) do
+    {object_with_eval, goal_evaluations} = evaluate_goals(object)
+    
+    # Find the most urgent goal
+    most_urgent = Enum.max_by(goal_evaluations, & &1.urgency)
+    
+    # Choose action that best supports the most urgent goal
+    best_action = Enum.max_by(available_actions, fn action ->
+      calculate_action_utility(action, most_urgent.goal, object_with_eval.state)
+    end)
+    
+    decision = %{
+      chosen_action: best_action,
+      reasoning: "Supporting goal: #{most_urgent.goal.description}",
+      urgency_score: most_urgent.urgency,
+      timestamp: DateTime.utc_now()
+    }
+    
+    IO.puts("🎯 #{object.id} decided: #{best_action.name} (for goal: #{most_urgent.goal.id})")
+    
+    updated_history = [decision | Enum.take(object_with_eval.decision_history, 9)]
+    
+    %{object_with_eval | decision_history: updated_history}
+  end
+  
+  def execute_action(object, action) do
+    # Simulate action effects on object state
+    state_changes = case action.name do
+      :rest -> %{energy: min(100, object.state.energy + 20)}
+      :socialize -> %{social_connections: object.state.social_connections + 1, energy: max(0, object.state.energy - 5)}
+      :study -> %{skills_learned: object.state.skills_learned + 1, energy: max(0, object.state.energy - 10)}
+      :work -> %{energy: max(0, object.state.energy - 15)}
+      _ -> %{}
+    end
+    
+    updated_state = Map.merge(object.state, state_changes)
+    
+    IO.puts("⚡ #{object.id} executed: #{action.name}")
+    IO.puts("   Effects: #{inspect(state_changes)}")
+    
+    %{object | state: updated_state}
+  end
+  
+  defp calculate_action_utility(action, goal, state) do
+    base_utility = case {action.name, goal.id} do
+      {:rest, :survival} -> 0.8
+      {:socialize, :social_connection} -> 0.9
+      {:study, :learning} -> 0.9
+      {:work, :survival} -> 0.6  # provides resources for survival
+      {_, _} -> 0.2  # low utility for mismatched actions
+    end
+    
+    # Adjust utility based on current state
+    state_modifier = case action.name do
+      :rest when state.energy < 30 -> 1.5  # more valuable when tired
+      :socialize when state.social_connections < 1 -> 1.3  # more valuable when lonely
+      :study when state.skills_learned < 2 -> 1.2  # more valuable when lacking skills
+      _ -> 1.0
+    end
+    
+    base_utility * state_modifier
+  end
+  
+  def display_goal_status(object) do
+    {_, goal_evaluations} = evaluate_goals(object)
+    
+    IO.puts("\n🎯 Goal-Oriented Object #{object.id}:")
+    IO.puts("   Overall Satisfaction: #{Float.round(object.state.satisfaction, 1)}%")
+    IO.puts("   Energy: #{object.state.energy}/100")
+    IO.puts("   Social Connections: #{object.state.social_connections}")
+    IO.puts("   Skills Learned: #{object.state.skills_learned}")
+    
+    IO.puts("\n   Goal Progress:")
+    Enum.each(goal_evaluations, fn eval ->
+      IO.puts("     #{eval.goal.id}: #{Float.round(eval.progress * 100, 1)}% (urgency: #{Float.round(eval.urgency, 2)})")
+    end)
+    
+    if length(object.decision_history) > 0 do
+      latest_decision = hd(object.decision_history)
+      IO.puts("\n   Latest Decision: #{latest_decision.chosen_action.name}")
+      IO.puts("   Reasoning: #{latest_decision.reasoning}")
+    end
+  end
+end
+
+# Available actions for the object to choose from
+available_actions = [
+  %{name: :rest, description: "Rest to recover energy"},
+  %{name: :socialize, description: "Meet new people and form connections"},
+  %{name: :study, description: "Learn new skills or knowledge"},
+  %{name: :work, description: "Work to earn resources"}
+]
+
+# Create a goal-oriented object
+frank = GoalOrientedObject.new(:frank)
+GoalOrientedObject.display_goal_status(frank)
+
+# Simulate a decision-making and action cycle
+IO.puts("\n=== Decision Making Cycle ===")
+
+frank_with_decision = GoalOrientedObject.make_decision(frank, available_actions)
+action_to_execute = hd(frank_with_decision.decision_history).chosen_action
+frank_after_action = GoalOrientedObject.execute_action(frank_with_decision, action_to_execute)
+
+GoalOrientedObject.display_goal_status(frank_after_action)
+
+# Let's run a few more cycles to see behavior evolution
+IO.puts("\n=== Multiple Decision Cycles ===")
+
+frank_final = Enum.reduce(1..5, frank_after_action, fn _cycle, acc ->
+  obj_with_decision = GoalOrientedObject.make_decision(acc, available_actions)
+  action = hd(obj_with_decision.decision_history).chosen_action
+  GoalOrientedObject.execute_action(obj_with_decision, action)
+end)
+
+GoalOrientedObject.display_goal_status(frank_final)
+```
+
+## Key Takeaways
+
+From this demonstration, you can see that AAOS objects are:
+
+1. **Autonomous**: They make their own decisions based on internal goals and state
+2. **Adaptive**: They learn from interactions and adjust their behavior
+3. **Social**: They form relationships and learn from other objects  
+4. **Goal-Directed**: They pursue objectives and optimize their actions
+5. **Self-Aware**: They can evaluate their own progress and satisfaction
+
+The next livebook will show how these objects can evolve their own schemas and reasoning patterns!
+
+```elixir
+IO.puts("🎉 AAOS Basic Demo Complete!")
+IO.puts("Next: Check out the meta-schema evolution livebook to see how objects can modify themselves!")
+```

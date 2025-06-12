@@ -1,0 +1,10 @@
+name = "AAOSProofs"
+version = "0.1.0"
+defaultTargets = ["aaosproofs"]
+
+[[lean_lib]]
+name = "AAOSProofs"
+
+[[lean_exe]]
+name = "aaosproofs"
+root = "Main"

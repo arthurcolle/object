@@ -1,0 +1,776 @@
+# Meta-Schema Evolution: Objects That Modify Themselves
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"},
+  {:jason, "~> 1.4"}
+])
+```
+
+## Understanding Meta-Schemas
+
+A meta-schema is a schema that describes how schemas can be modified. It's like DNA that can rewrite itself based on environmental pressures and performance feedback.
+
+In AAOS, objects don't just follow fixed programming - they can:
+- Analyze their own behavior patterns
+- Identify inefficiencies in their current schema
+- Propose modifications to improve performance
+- Test changes safely before committing
+- Roll back if changes prove harmful
+
+Let's see this in action!
+
+## Step 1: Basic Schema Structure
+
+```elixir
+defmodule Schema do
+  defstruct [
+    :id,
+    :version,
+    :attributes,
+    :behaviors,
+    :constraints,
+    :evolution_history,
+    :performance_metrics
+  ]
+  
+  def new(id, attributes \\ %{}, behaviors \\ %{}) do
+    %__MODULE__{
+      id: id,
+      version: "1.0.0",
+      attributes: attributes,
+      behaviors: behaviors,
+      constraints: %{
+        max_evolution_rate: 0.2,
+        core_attributes_immutable: true,
+        rollback_generations: 5
+      },
+      evolution_history: [],
+      performance_metrics: %{
+        effectiveness: 0.5,
+        efficiency: 0.5,
+        adaptability: 0.5
+      }
+    }
+  end
+  
+  def evolve_schema(schema, performance_data, environmental_pressures) do
+    # Analyze current performance vs. desired performance
+    performance_gap = analyze_performance_gap(schema.performance_metrics, performance_data)
+    
+    # Generate potential modifications
+    proposed_changes = generate_schema_modifications(schema, performance_gap, environmental_pressures)
+    
+    # Evaluate safety and compatibility of changes
+    safe_changes = filter_safe_changes(proposed_changes, schema.constraints)
+    
+    if length(safe_changes) > 0 do
+      # Apply the most promising change
+      best_change = Enum.max_by(safe_changes, & &1.expected_improvement)
+      apply_schema_change(schema, best_change)
+    else
+      {:no_evolution, "No safe beneficial changes identified"}
+    end
+  end
+  
+  defp analyze_performance_gap(current_metrics, target_performance) do
+    %{
+      effectiveness_gap: target_performance.effectiveness - current_metrics.effectiveness,
+      efficiency_gap: target_performance.efficiency - current_metrics.efficiency,
+      adaptability_gap: target_performance.adaptability - current_metrics.adaptability
+    }
+  end
+  
+  defp generate_schema_modifications(schema, gaps, pressures) do
+    modifications = []
+    
+    # Suggest attribute modifications based on performance gaps
+    modifications = if gaps.effectiveness_gap > 0.1 do
+      [%{
+        type: :attribute_enhancement,
+        target: :decision_making,
+        change: %{sophistication_level: :increase},
+        expected_improvement: gaps.effectiveness_gap * 0.8,
+        risk_level: :low
+      } | modifications]
+    else
+      modifications
+    end
+    
+    # Suggest behavior modifications based on efficiency gaps
+    modifications = if gaps.efficiency_gap > 0.1 do
+      [%{
+        type: :behavior_optimization,
+        target: :message_processing,
+        change: %{batch_size: :increase, priority_filtering: :enable},
+        expected_improvement: gaps.efficiency_gap * 0.7,
+        risk_level: :medium
+      } | modifications]
+    else
+      modifications
+    end
+    
+    # Suggest new capabilities based on environmental pressures
+    modifications = if pressures.cooperation_demand > 0.7 do
+      [%{
+        type: :capability_addition,
+        target: :social_coordination,
+        change: %{coalition_formation: :add, negotiation_protocols: :add},
+        expected_improvement: 0.3,
+        risk_level: :high
+      } | modifications]
+    else
+      modifications
+    end
+    
+    modifications
+  end
+  
+  defp filter_safe_changes(proposed_changes, constraints) do
+    Enum.filter(proposed_changes, fn change ->
+      # Check if change violates evolution rate limits
+      evolution_rate_ok = change.expected_improvement <= constraints.max_evolution_rate
+      
+      # Check if change affects immutable core attributes
+      core_attributes_ok = if constraints.core_attributes_immutable do
+        change.type != :core_attribute_modification
+      else
+        true
+      end
+      
+      # Risk assessment
+      risk_acceptable = change.risk_level in [:low, :medium]
+      
+      evolution_rate_ok and core_attributes_ok and risk_acceptable
+    end)
+  end
+  
+  defp apply_schema_change(schema, change) do
+    # Create new version
+    new_version = increment_version(schema.version)
+    
+    # Apply the change based on its type
+    {updated_attributes, updated_behaviors} = case change.type do
+      :attribute_enhancement ->
+        enhanced_attrs = Map.update(schema.attributes, change.target, %{}, fn attr ->
+          Map.merge(attr, change.change)
+        end)
+        {enhanced_attrs, schema.behaviors}
+      
+      :behavior_optimization ->
+        optimized_behaviors = Map.update(schema.behaviors, change.target, %{}, fn behavior ->
+          Map.merge(behavior, change.change)
+        end)
+        {schema.attributes, optimized_behaviors}
+      
+      :capability_addition ->
+        new_behaviors = Map.merge(schema.behaviors, change.change)
+        {schema.attributes, new_behaviors}
+    end
+    
+    # Record evolution in history
+    evolution_record = %{
+      from_version: schema.version,
+      to_version: new_version,
+      change_applied: change,
+      timestamp: DateTime.utc_now(),
+      reason: "Performance optimization"
+    }
+    
+    updated_history = [evolution_record | Enum.take(schema.evolution_history, 4)]
+    
+    evolved_schema = %{schema |
+      version: new_version,
+      attributes: updated_attributes,
+      behaviors: updated_behaviors,
+      evolution_history: updated_history
+    }
+    
+    IO.puts("🧬 Schema #{schema.id} evolved from #{schema.version} → #{new_version}")
+    IO.puts("   Change: #{change.type} on #{change.target}")
+    IO.puts("   Expected improvement: #{Float.round(change.expected_improvement * 100, 1)}%")
+    
+    {:evolved, evolved_schema}
+  end
+  
+  defp increment_version(version) do
+    [major, minor, patch] = String.split(version, ".") |> Enum.map(&String.to_integer/1)
+    "#{major}.#{minor}.#{patch + 1}"
+  end
+  
+  def display_schema_status(schema) do
+    IO.puts("\n📋 Schema #{schema.id} (v#{schema.version}):")
+    IO.puts("   Attributes: #{map_size(schema.attributes)}")
+    IO.puts("   Behaviors: #{map_size(schema.behaviors)}")
+    IO.puts("   Performance:")
+    IO.puts("     Effectiveness: #{Float.round(schema.performance_metrics.effectiveness * 100, 1)}%")
+    IO.puts("     Efficiency: #{Float.round(schema.performance_metrics.efficiency * 100, 1)}%")
+    IO.puts("     Adaptability: #{Float.round(schema.performance_metrics.adaptability * 100, 1)}%")
+    IO.puts("   Evolution History: #{length(schema.evolution_history)} changes")
+    
+    if length(schema.evolution_history) > 0 do
+      latest = hd(schema.evolution_history)
+      IO.puts("   Latest Evolution: #{latest.change_applied.type} (#{latest.from_version} → #{latest.to_version})")
+    end
+  end
+end
+
+# Create a basic agent schema
+agent_schema = Schema.new(:agent_alpha, 
+  %{
+    decision_making: %{sophistication_level: :basic, learning_rate: 0.1},
+    memory: %{capacity: 1000, retention_policy: :fifo},
+    communication: %{protocols: [:basic_messaging], bandwidth: :standard}
+  },
+  %{
+    message_processing: %{batch_size: 1, priority_filtering: false},
+    goal_pursuit: %{planning_depth: 3, adaptation_frequency: :daily},
+    social_interaction: %{trust_model: :simple, reputation_tracking: false}
+  }
+)
+
+Schema.display_schema_status(agent_schema)
+```
+
+## Step 2: Performance-Driven Evolution
+
+```elixir
+# Simulate performance data indicating room for improvement
+current_performance = %{
+  effectiveness: 0.4,  # Below target
+  efficiency: 0.3,     # Needs improvement 
+  adaptability: 0.6    # Acceptable
+}
+
+target_performance = %{
+  effectiveness: 0.8,
+  efficiency: 0.7,
+  adaptability: 0.7
+}
+
+environmental_pressures = %{
+  cooperation_demand: 0.8,  # High need for cooperation
+  resource_scarcity: 0.6,   # Moderate resource pressure
+  change_frequency: 0.7     # Frequent environmental changes
+}
+
+IO.puts("🎯 Performance Analysis:")
+IO.puts("Current vs Target Effectiveness: #{current_performance.effectiveness} → #{target_performance.effectiveness}")
+IO.puts("Current vs Target Efficiency: #{current_performance.efficiency} → #{target_performance.efficiency}")
+IO.puts("Environmental Cooperation Demand: #{environmental_pressures.cooperation_demand}")
+
+# Attempt schema evolution
+case Schema.evolve_schema(agent_schema, target_performance, environmental_pressures) do
+  {:evolved, evolved_schema} ->
+    Schema.display_schema_status(evolved_schema)
+    agent_schema = evolved_schema
+  
+  {:no_evolution, reason} ->
+    IO.puts("❌ Evolution failed: #{reason}")
+end
+```
+
+## Step 3: Multi-Generation Evolution
+
+```elixir
+defmodule EvolutionSimulator do
+  def simulate_evolution_cycles(schema, num_cycles \\ 5) do
+    IO.puts("\n🔄 Simulating #{num_cycles} evolution cycles...")
+    
+    Enum.reduce(1..num_cycles, schema, fn cycle, current_schema ->
+      IO.puts("\n--- Cycle #{cycle} ---")
+      
+      # Simulate varying performance and environmental conditions
+      performance = %{
+        effectiveness: 0.3 + :rand.uniform() * 0.4,  # 0.3 to 0.7
+        efficiency: 0.2 + :rand.uniform() * 0.5,      # 0.2 to 0.7
+        adaptability: 0.4 + :rand.uniform() * 0.4     # 0.4 to 0.8
+      }
+      
+      target = %{
+        effectiveness: 0.8,
+        efficiency: 0.8,
+        adaptability: 0.8
+      }
+      
+      pressures = %{
+        cooperation_demand: :rand.uniform(),
+        resource_scarcity: :rand.uniform(),
+        change_frequency: :rand.uniform()
+      }
+      
+      # Update schema performance metrics based on simulation
+      updated_metrics = %{
+        effectiveness: min(1.0, current_schema.performance_metrics.effectiveness + (:rand.uniform() - 0.5) * 0.1),
+        efficiency: min(1.0, current_schema.performance_metrics.efficiency + (:rand.uniform() - 0.5) * 0.1),
+        adaptability: min(1.0, current_schema.performance_metrics.adaptability + (:rand.uniform() - 0.5) * 0.1)
+      }
+      
+      schema_with_metrics = %{current_schema | performance_metrics: updated_metrics}
+      
+      case Schema.evolve_schema(schema_with_metrics, target, pressures) do
+        {:evolved, evolved} -> evolved
+        {:no_evolution, _} -> schema_with_metrics
+      end
+    end)
+  end
+  
+  def analyze_evolution_trajectory(schema) do
+    IO.puts("\n📈 Evolution Trajectory Analysis:")
+    IO.puts("Schema #{schema.id} - Final Version: #{schema.version}")
+    
+    if length(schema.evolution_history) > 0 do
+      IO.puts("\nEvolution History:")
+      
+      schema.evolution_history
+      |> Enum.reverse()  # Show chronological order
+      |> Enum.with_index(1)
+      |> Enum.each(fn {evolution, index} ->
+        IO.puts("  #{index}. #{evolution.from_version} → #{evolution.to_version}")
+        IO.puts("     Change: #{evolution.change_applied.type}")
+        IO.puts("     Target: #{evolution.change_applied.target}")
+        IO.puts("     Expected improvement: #{Float.round(evolution.change_applied.expected_improvement * 100, 1)}%")
+      end)
+      
+      # Calculate evolution velocity
+      total_changes = length(schema.evolution_history)
+      if total_changes > 1 do
+        first_evolution = List.last(schema.evolution_history)
+        latest_evolution = hd(schema.evolution_history)
+        time_span = DateTime.diff(latest_evolution.timestamp, first_evolution.timestamp, :hour)
+        evolution_velocity = if time_span > 0, do: total_changes / time_span, else: 0
+        
+        IO.puts("\nEvolution Velocity: #{Float.round(evolution_velocity, 3)} changes/hour")
+      end
+    else
+      IO.puts("No evolution history recorded.")
+    end
+  end
+end
+
+# Run evolution simulation
+final_schema = EvolutionSimulator.simulate_evolution_cycles(agent_schema, 5)
+EvolutionSimulator.analyze_evolution_trajectory(final_schema)
+```
+
+## Step 4: Schema Compatibility and Inheritance
+
+```elixir
+defmodule SchemaInheritance do
+  def create_specialized_schema(parent_schema, specialization) do
+    specialized_attributes = case specialization do
+      :researcher ->
+        Map.merge(parent_schema.attributes, %{
+          knowledge_base: %{domains: [], update_frequency: :continuous},
+          hypothesis_generation: %{creativity_level: :high, validation_rigor: :strict},
+          data_analysis: %{statistical_methods: [:regression, :clustering], visualization: true}
+        })
+      
+      :coordinator ->
+        Map.merge(parent_schema.attributes, %{
+          resource_management: %{optimization_algorithm: :genetic, load_balancing: true},
+          team_coordination: %{communication_style: :directive, delegation_strategy: :capability_based},
+          conflict_resolution: %{mediation_approach: :collaborative, escalation_rules: []}
+        })
+      
+      :creative ->
+        Map.merge(parent_schema.attributes, %{
+          creative_processes: %{inspiration_sources: [:random, :analogical], idea_generation: :divergent},
+          aesthetic_evaluation: %{criteria: [:novelty, :beauty, :usefulness], weighting: :adaptive},
+          iteration_strategy: %{refinement_cycles: 5, feedback_integration: :selective}
+        })
+    end
+    
+    specialized_behaviors = case specialization do
+      :researcher ->
+        Map.merge(parent_schema.behaviors, %{
+          research_methodology: %{approach: :systematic, documentation: :comprehensive},
+          peer_review: %{collaboration_level: :high, critique_acceptance: :open},
+          knowledge_sharing: %{publication_frequency: :regular, open_access: true}
+        })
+      
+      :coordinator ->
+        Map.merge(parent_schema.behaviors, %{
+          task_allocation: %{fairness_priority: :high, efficiency_optimization: true},
+          performance_monitoring: %{metrics_tracking: :real_time, feedback_delivery: :constructive},
+          strategic_planning: %{horizon: :long_term, contingency_preparation: true}
+        })
+      
+      :creative ->
+        Map.merge(parent_schema.behaviors, %{
+          brainstorming: %{session_structure: :loose, idea_capture: :comprehensive},
+          prototype_development: %{iteration_speed: :rapid, user_testing: :frequent},
+          artistic_expression: %{medium_flexibility: :high, style_evolution: :continuous}
+        })
+    end
+    
+    specialized_schema = %{parent_schema |
+      id: :"#{specialization}_#{parent_schema.id}",
+      version: "1.0.0-#{specialization}",
+      attributes: specialized_attributes,
+      behaviors: specialized_behaviors,
+      evolution_history: []
+    }
+    
+    IO.puts("🎭 Created specialized schema: #{specialized_schema.id}")
+    IO.puts("   Inherited from: #{parent_schema.id} (v#{parent_schema.version})")
+    IO.puts("   Specialization: #{specialization}")
+    IO.puts("   New attributes: #{map_size(specialized_attributes) - map_size(parent_schema.attributes)}")
+    IO.puts("   New behaviors: #{map_size(specialized_behaviors) - map_size(parent_schema.behaviors)}")
+    
+    specialized_schema
+  end
+  
+  def calculate_schema_compatibility(schema1, schema2) do
+    # Calculate attribute compatibility
+    common_attributes = Map.keys(schema1.attributes) 
+                       |> Enum.filter(&Map.has_key?(schema2.attributes, &1))
+    
+    attribute_compatibility = if length(common_attributes) > 0 do
+      compatible_attrs = Enum.count(common_attributes, fn attr ->
+        attr1 = schema1.attributes[attr]
+        attr2 = schema2.attributes[attr]
+        # Simplified compatibility check
+        map_size(Map.take(attr1, Map.keys(attr2))) / map_size(attr1) > 0.5
+      end)
+      
+      compatible_attrs / length(common_attributes)
+    else
+      0.0
+    end
+    
+    # Calculate behavior compatibility
+    common_behaviors = Map.keys(schema1.behaviors)
+                      |> Enum.filter(&Map.has_key?(schema2.behaviors, &1))
+    
+    behavior_compatibility = if length(common_behaviors) > 0 do
+      compatible_behaviors = Enum.count(common_behaviors, fn behavior ->
+        beh1 = schema1.behaviors[behavior]
+        beh2 = schema2.behaviors[behavior]
+        # Check if behaviors have similar structure
+        map_size(Map.take(beh1, Map.keys(beh2))) / map_size(beh1) > 0.5
+      end)
+      
+      compatible_behaviors / length(common_behaviors)
+    else
+      0.0
+    end
+    
+    # Overall compatibility score
+    overall_compatibility = (attribute_compatibility + behavior_compatibility) / 2
+    
+    %{
+      overall: overall_compatibility,
+      attributes: attribute_compatibility,
+      behaviors: behavior_compatibility,
+      common_attributes: length(common_attributes),
+      common_behaviors: length(common_behaviors)
+    }
+  end
+  
+  def attempt_schema_merge(schema1, schema2, compatibility_threshold \\ 0.6) do
+    compatibility = calculate_schema_compatibility(schema1, schema2)
+    
+    if compatibility.overall >= compatibility_threshold do
+      # Merge compatible schemas
+      merged_attributes = Map.merge(schema1.attributes, schema2.attributes)
+      merged_behaviors = Map.merge(schema1.behaviors, schema2.behaviors)
+      
+      merged_schema = %{schema1 |
+        id: :"merged_#{schema1.id}_#{schema2.id}",
+        version: "1.0.0-merged",
+        attributes: merged_attributes,
+        behaviors: merged_behaviors,
+        evolution_history: []
+      }
+      
+      IO.puts("🤝 Successfully merged schemas!")
+      IO.puts("   Compatibility score: #{Float.round(compatibility.overall * 100, 1)}%")
+      IO.puts("   Merged schema: #{merged_schema.id}")
+      
+      {:success, merged_schema}
+    else
+      IO.puts("❌ Schema merge failed - insufficient compatibility")
+      IO.puts("   Compatibility score: #{Float.round(compatibility.overall * 100, 1)}%")
+      IO.puts("   Required threshold: #{Float.round(compatibility_threshold * 100, 1)}%")
+      
+      {:failed, compatibility}
+    end
+  end
+end
+
+# Create specialized schemas from our evolved schema
+researcher_schema = SchemaInheritance.create_specialized_schema(final_schema, :researcher)
+coordinator_schema = SchemaInheritance.create_specialized_schema(final_schema, :coordinator)
+creative_schema = SchemaInheritance.create_specialized_schema(final_schema, :creative)
+
+# Check compatibility between specialized schemas
+IO.puts("\n🔍 Schema Compatibility Analysis:")
+
+researcher_coordinator_compat = SchemaInheritance.calculate_schema_compatibility(researcher_schema, coordinator_schema)
+IO.puts("Researcher ↔ Coordinator: #{Float.round(researcher_coordinator_compat.overall * 100, 1)}%")
+
+researcher_creative_compat = SchemaInheritance.calculate_schema_compatibility(researcher_schema, creative_schema)
+IO.puts("Researcher ↔ Creative: #{Float.round(researcher_creative_compat.overall * 100, 1)}%")
+
+coordinator_creative_compat = SchemaInheritance.calculate_schema_compatibility(coordinator_schema, creative_schema)
+IO.puts("Coordinator ↔ Creative: #{Float.round(coordinator_creative_compat.overall * 100, 1)}%")
+
+# Attempt to merge the most compatible schemas
+IO.puts("\n🔄 Attempting Schema Merge:")
+case SchemaInheritance.attempt_schema_merge(researcher_schema, coordinator_schema, 0.5) do
+  {:success, merged_schema} ->
+    Schema.display_schema_status(merged_schema)
+  
+  {:failed, compatibility_info} ->
+    IO.puts("Merge details: #{inspect(compatibility_info)}")
+end
+```
+
+## Step 5: Real-Time Schema Adaptation
+
+```elixir
+defmodule AdaptiveSchemaObject do
+  defstruct [:id, :schema, :performance_history, :adaptation_triggers, :current_state]
+  
+  def new(id, initial_schema) do
+    %__MODULE__{
+      id: id,
+      schema: initial_schema,
+      performance_history: [],
+      adaptation_triggers: %{
+        performance_drop_threshold: 0.2,
+        stagnation_period: 5,
+        environmental_change_sensitivity: 0.3
+      },
+      current_state: %{
+        energy: 100,
+        task_completion_rate: 0.5,
+        social_satisfaction: 0.6,
+        learning_progress: 0.4
+      }
+    }
+  end
+  
+  def execute_task(object, task_type, difficulty) do
+    # Simulate task execution based on current schema capabilities
+    success_probability = calculate_success_probability(object.schema, task_type, difficulty)
+    success = :rand.uniform() < success_probability
+    
+    # Update performance history
+    performance_record = %{
+      task_type: task_type,
+      difficulty: difficulty,
+      success: success,
+      timestamp: DateTime.utc_now(),
+      schema_version: object.schema.version
+    }
+    
+    updated_history = [performance_record | Enum.take(object.performance_history, 19)]
+    
+    # Update current state based on task outcome
+    state_changes = if success do
+      %{
+        task_completion_rate: min(1.0, object.current_state.task_completion_rate + 0.05),
+        learning_progress: min(1.0, object.current_state.learning_progress + 0.02)
+      }
+    else
+      %{
+        task_completion_rate: max(0.0, object.current_state.task_completion_rate - 0.03),
+        energy: max(0, object.current_state.energy - 5)
+      }
+    end
+    
+    updated_state = Map.merge(object.current_state, state_changes)
+    
+    IO.puts("#{if success, do: "✅", else: "❌"} #{object.id} executed #{task_type} (difficulty: #{difficulty}) - #{if success, do: "SUCCESS", else: "FAILED"}")
+    
+    updated_object = %{object |
+      performance_history: updated_history,
+      current_state: updated_state
+    }
+    
+    # Check if adaptation is needed
+    check_adaptation_triggers(updated_object)
+  end
+  
+  defp calculate_success_probability(schema, task_type, difficulty) do
+    # Base probability from schema capabilities
+    base_prob = case task_type do
+      :research when Map.has_key?(schema.attributes, :knowledge_base) -> 0.8
+      :coordination when Map.has_key?(schema.attributes, :resource_management) -> 0.8
+      :creative when Map.has_key?(schema.attributes, :creative_processes) -> 0.8
+      :social when Map.has_key?(schema.behaviors, :social_interaction) -> 0.7
+      _ -> 0.5  # Generic capability
+    end
+    
+    # Adjust for difficulty
+    difficulty_modifier = case difficulty do
+      :easy -> 1.2
+      :medium -> 1.0
+      :hard -> 0.7
+      :extreme -> 0.4
+    end
+    
+    # Apply performance metrics influence
+    performance_modifier = (schema.performance_metrics.effectiveness + schema.performance_metrics.efficiency) / 2
+    
+    min(1.0, max(0.1, base_prob * difficulty_modifier * performance_modifier))
+  end
+  
+  defp check_adaptation_triggers(object) do
+    recent_performance = object.performance_history
+                        |> Enum.take(5)
+                        |> Enum.map(& &1.success)
+    
+    success_rate = if length(recent_performance) > 0 do
+      Enum.count(recent_performance, & &1) / length(recent_performance)
+    else
+      0.5
+    end
+    
+    # Check for performance drop
+    performance_drop = object.current_state.task_completion_rate < object.adaptation_triggers.performance_drop_threshold
+    
+    # Check for stagnation
+    version_changes = object.performance_history
+                     |> Enum.take(object.adaptation_triggers.stagnation_period)
+                     |> Enum.map(& &1.schema_version)
+                     |> Enum.uniq()
+    
+    stagnation = length(version_changes) <= 1 and length(object.performance_history) >= object.adaptation_triggers.stagnation_period
+    
+    cond do
+      performance_drop ->
+        IO.puts("🚨 Performance drop detected - triggering adaptation")
+        adapt_schema(object, :performance_recovery)
+      
+      stagnation and success_rate < 0.7 ->
+        IO.puts("📈 Stagnation detected - triggering optimization")
+        adapt_schema(object, :optimization)
+      
+      success_rate > 0.9 ->
+        IO.puts("🎯 High performance - considering capability expansion")
+        adapt_schema(object, :capability_expansion)
+      
+      true ->
+        object
+    end
+  end
+  
+  defp adapt_schema(object, adaptation_reason) do
+    target_performance = case adaptation_reason do
+      :performance_recovery -> %{
+        effectiveness: object.schema.performance_metrics.effectiveness + 0.3,
+        efficiency: object.schema.performance_metrics.efficiency + 0.2,
+        adaptability: object.schema.performance_metrics.adaptability + 0.1
+      }
+      
+      :optimization -> %{
+        effectiveness: min(1.0, object.schema.performance_metrics.effectiveness + 0.1),
+        efficiency: min(1.0, object.schema.performance_metrics.efficiency + 0.2),
+        adaptability: min(1.0, object.schema.performance_metrics.adaptability + 0.1)
+      }
+      
+      :capability_expansion -> %{
+        effectiveness: min(1.0, object.schema.performance_metrics.effectiveness + 0.1),
+        efficiency: object.schema.performance_metrics.efficiency,
+        adaptability: min(1.0, object.schema.performance_metrics.adaptability + 0.3)
+      }
+    end
+    
+    environmental_pressures = %{
+      cooperation_demand: :rand.uniform(),
+      resource_scarcity: :rand.uniform(),
+      change_frequency: :rand.uniform()
+    }
+    
+    case Schema.evolve_schema(object.schema, target_performance, environmental_pressures) do
+      {:evolved, evolved_schema} ->
+        IO.puts("🧬 Schema adapted successfully for #{adaptation_reason}")
+        %{object | schema: evolved_schema}
+      
+      {:no_evolution, reason} ->
+        IO.puts("⚠️  Schema adaptation failed: #{reason}")
+        object
+    end
+  end
+  
+  def display_adaptive_status(object) do
+    recent_success_rate = if length(object.performance_history) > 0 do
+      recent_successes = object.performance_history
+                        |> Enum.take(5)
+                        |> Enum.count(& &1.success)
+      recent_successes / min(5, length(object.performance_history)) * 100
+    else
+      0
+    end
+    
+    IO.puts("\n🤖 Adaptive Object #{object.id}:")
+    IO.puts("   Schema Version: #{object.schema.version}")
+    IO.puts("   Recent Success Rate: #{Float.round(recent_success_rate, 1)}%")
+    IO.puts("   Task Completion Rate: #{Float.round(object.current_state.task_completion_rate * 100, 1)}%")
+    IO.puts("   Energy: #{object.current_state.energy}/100")
+    IO.puts("   Learning Progress: #{Float.round(object.current_state.learning_progress * 100, 1)}%")
+    IO.puts("   Schema Evolutions: #{length(object.schema.evolution_history)}")
+    
+    if length(object.performance_history) > 0 do
+      latest_task = hd(object.performance_history)
+      IO.puts("   Latest Task: #{latest_task.task_type} (#{latest_task.difficulty}) - #{if latest_task.success, do: "✅", else: "❌"}")
+    end
+  end
+end
+
+# Create an adaptive object with the researcher schema
+adaptive_researcher = AdaptiveSchemaObject.new(:adaptive_alpha, researcher_schema)
+AdaptiveSchemaObject.display_adaptive_status(adaptive_researcher)
+
+# Simulate a series of tasks that will trigger adaptations
+tasks = [
+  {:research, :easy},
+  {:research, :medium}, 
+  {:coordination, :hard},    # Should struggle with this
+  {:coordination, :hard},    # Continued struggle
+  {:research, :extreme},     # Very difficult
+  {:creative, :medium},
+  {:research, :easy},        # Should improve after adaptation
+  {:research, :medium},
+  {:social, :easy},
+  {:research, :hard}
+]
+
+IO.puts("\n🎮 Starting Task Simulation...")
+
+final_adaptive_object = Enum.reduce(tasks, adaptive_researcher, fn {task_type, difficulty}, acc ->
+  updated_object = AdaptiveSchemaObject.execute_task(acc, task_type, difficulty)
+  Process.sleep(100)  # Small delay for readability
+  updated_object
+end)
+
+IO.puts("\n=== Final Adaptive Status ===")
+AdaptiveSchemaObject.display_adaptive_status(final_adaptive_object)
+```
+
+## Key Insights from Meta-Schema Evolution
+
+This demonstration shows how objects can:
+
+1. **Self-Analyze**: Detect performance gaps and identify improvement opportunities
+2. **Self-Modify**: Generate and apply safe schema modifications
+3. **Self-Optimize**: Continuously adapt based on environmental feedback
+4. **Inherit & Specialize**: Create specialized variants while maintaining compatibility
+5. **Collaborate**: Merge compatible schemas to create hybrid capabilities
+
+The meta-schema system ensures that:
+- Evolution is **safe** (constraints prevent harmful changes)
+- Changes are **beneficial** (performance-driven modifications)
+- History is **preserved** (rollback capability)
+- Compatibility is **maintained** (inheritance and merging rules)
+
+Next up: See how these self-modifying objects learn through OORL!
+
+```elixir
+IO.puts("🎉 Meta-Schema Evolution Demo Complete!")
+IO.puts("The objects are literally rewriting their own code based on experience!")
+IO.puts("Next: Check out the OORL livebook to see how they learn and form coalitions!")
+```
