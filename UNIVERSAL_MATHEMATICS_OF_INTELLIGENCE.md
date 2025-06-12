@@ -1,5 +1,7 @@
 # Universal Mathematical Principles and the Nature of Intelligence
 
+> **Related Documentation**: [README](README.md) | [Cosmic Intelligence Series](COSMIC_INTELLIGENCE_SERIES_OUTLINE.md) | [Mathematical Foundations](MATHEMATICS_OF_AUTONOMOUS_AGENCY.md) | [Philosophy](PHILOSOPHY_OF_AUTONOMOUS_AGENCY.md) | [Advanced Mathematics](ADVANCED_MATHEMATICS_APPENDIX.md) | [Computational Emergence](COMPUTATIONAL_EMERGENCE_PAPER.md)
+
 This document establishes the deepest mathematical principles governing all forms of intelligence, consciousness, and agency in the universe. It represents the culmination of the AAOS mathematical framework, revealing universal laws that transcend specific implementations and touch the fundamental nature of mind and reality.
 
 ---

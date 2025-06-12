@@ -1,5 +1,7 @@
 # Implementation Guide: Digital Evolution System
 
+> **Related Documentation**: [README](README.md) | [Neuroevolutionary Civilizations](NEUROEVOLUTIONARY_DIGITAL_CIVILIZATIONS.md) | [Cosmic Intelligence Series](COSMIC_INTELLIGENCE_SERIES_OUTLINE.md) | [System Architecture](ARCHITECTURE_OF_AUTONOMOUS_AGENCY.md)
+
 This guide provides practical steps for implementing the neuroevolutionary digital civilization framework.
 
 ---

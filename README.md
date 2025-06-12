@@ -3811,6 +3811,10 @@ portfolio_manager = Object.create_subtype(:coordinator_object,
 8. **[Formal Proofs](FORMAL_PROOFS_APPENDIX.md)** - Machine-verified theorems
 9. **[System Report](AAOS_SYSTEM_REPORT.md)** - Production readiness assessment
 10. **[Performance Baselines](BASELINES.md)** - Empirical validation metrics
+11. **[Cosmic Intelligence Series](COSMIC_INTELLIGENCE_SERIES_OUTLINE.md)** - 9-part intergalactic saga
+12. **[Neuroevolutionary Civilizations](NEUROEVOLUTIONARY_DIGITAL_CIVILIZATIONS.md)** - Digital society evolution
+13. **[Universal Mathematics of Intelligence](UNIVERSAL_MATHEMATICS_OF_INTELLIGENCE.md)** - Deep principles
+14. **[Comprehensive Improvement Analysis](COMPREHENSIVE_IMPROVEMENT_ANALYSIS.md)** - Enhancement roadmap
 
 ### Interactive Examples
 

@@ -13,7 +13,7 @@ namespace AAOSProofs.Universal
 
 open Real Classical
 
-/-- ========== FOUNDATIONAL STRUCTURE DEFINITIONS ========== -/
+-- ========== FOUNDATIONAL STRUCTURE DEFINITIONS ==========
 
 /-- Mathematical structures as simple types -/
 structure MathStructure where
@@ -30,7 +30,7 @@ structure RealityStructure where
   entities : ℕ
   relations : ℕ
 
-/-- ========== FUNDAMENTAL ISOMORPHISM THEOREMS ========== -/
+-- ========== FUNDAMENTAL ISOMORPHISM THEOREMS ==========
 
 /-- The core theorem: Mathematics ≃ Intelligence ≃ Reality -/
 theorem universal_structure_isomorphism :
