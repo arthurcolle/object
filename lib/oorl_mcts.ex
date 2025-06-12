@@ -238,7 +238,7 @@ defmodule OORL.MCTS do
     end
   end
 
-  defp backpropagate(node, reward, mcts_config) do
+  defp backpropagate(node, reward, _mcts_config) do
     if node do
       updated_node = %{node | 
         visits: node.visits + 1,
@@ -247,7 +247,7 @@ defmodule OORL.MCTS do
       }
       
       if node.parent do
-        backpropagate(node.parent, reward, mcts_config)
+        backpropagate(node.parent, reward, _mcts_config)
       end
       
       updated_node

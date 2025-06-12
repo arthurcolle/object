@@ -18,9 +18,9 @@ defmodule Object.Encryption do
   use GenServer
   require Logger
   
-  @curve25519_key_size 32
-  @ed25519_key_size 32
-  @chacha20_key_size 32
+  # @curve25519_key_size 32
+  # @ed25519_key_size 32
+  # @chacha20_key_size 32
   @chacha20_nonce_size 12
   @poly1305_tag_size 16
   

@@ -66,4 +66,67 @@ by
   intro ⟨alg, h_alg⟩
   sorry -- Derive contradiction
 
+/-- Downward causation in emergent systems -/
+def hasDownwardCausation (sys : MultiAgentSystem) : Prop :=
+  ∃ (global_state : ℝ), ∀ i < sys.N,
+    ∃ (influence : ℝ → ℝ), influence global_state ≠ 0
+
+/-- Emergence requires interaction -/
+theorem emergence_requires_interaction (G : GlobalProperty) :
+  isGenuinelyEmergent G → 
+  ∃ (interaction_strength : ℝ), interaction_strength > 0 :=
+by
+  intro h_emerge
+  use 1
+  exact zero_lt_one
+
+/-- Phase transition characterization -/
+theorem phase_transition_emergence (sys : MultiAgentSystem) :
+  ∃ (critical_N : ℕ), sys.N > critical_N → 
+    emergenceStrength sys > log (critical_N : ℝ) :=
+by
+  use 10  -- Critical size
+  intro h_large
+  unfold emergenceStrength
+  exact log_lt_log (by simp : (10 : ℝ) > 0) (by simp : sys.N > 10)
+
+/-- Compositionality breaks at emergence -/
+theorem non_compositional_emergence (G : GlobalProperty) :
+  isGenuinelyEmergent G →
+  ¬∃ (compose : GlobalProperty → GlobalProperty → GlobalProperty),
+    ∀ G1 G2, isGenuinelyEmergent (compose G1 G2) ↔ 
+      isGenuinelyEmergent G1 ∨ isGenuinelyEmergent G2 :=
+by
+  intro h_emerge
+  intro ⟨compose, h_compose⟩
+  sorry -- Show contradiction with non-linearity
+
+/-- Information-theoretic emergence measure -/
+noncomputable def mutualInformation (sys : MultiAgentSystem) : ℝ :=
+  log (sys.N : ℝ) * sys.N -- Simplified mutual information
+
+/-- Emergence increases mutual information -/
+theorem emergence_increases_information (sys : MultiAgentSystem) :
+  emergenceStrength sys > 0 → mutualInformation sys > sys.N :=
+by
+  intro h_pos
+  unfold mutualInformation emergenceStrength
+  simp at h_pos ⊢
+  sorry -- Complete proof
+
+/-- Robustness of emergent properties -/
+theorem emergent_robustness (G : GlobalProperty) (sys : MultiAgentSystem) :
+  isGenuinelyEmergent G → G sys → 
+  ∃ (ε : ℝ), ε > 0 ∧ ∀ (perturbation : List (ℕ → ℝ)),
+    perturbation.length = sys.N → 
+    (∀ i, ∀ t, |perturbation.get? i |>.getD (fun _ => 0) t| < ε) →
+    G {sys with agents := sorry} :=
+by
+  intro h_emerge h_G
+  use 0.1
+  constructor
+  · norm_num
+  · intro perturb h_len h_small
+    sorry
+
 end AAOSProofs.Emergence

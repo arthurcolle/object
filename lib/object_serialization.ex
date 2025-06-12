@@ -175,10 +175,11 @@ defmodule Object.Serialization do
       __struct__: "Object",
       __version__: 1,
       id: object.id,
-      type: object.type,
+      subtype: object.subtype,
       state: prepare_state(object.state, opts),
-      metadata: object.metadata,
       goal: serialize_function(object.goal),
+      created_at: object.created_at,
+      updated_at: object.updated_at,
       timestamp: DateTime.utc_now()
     }
     
@@ -191,7 +192,10 @@ defmodule Object.Serialization do
     prepared = if Keyword.get(opts, :include_private, false) do
       Map.put(prepared, :private, %{
         mailbox: serialize_mailbox(object.mailbox),
-        learning_state: object.learning_state
+        interaction_history: object.interaction_history,
+        world_model: object.world_model,
+        meta_dsl: object.meta_dsl,
+        parameters: object.parameters
       })
     else
       prepared
@@ -210,6 +214,13 @@ defmodule Object.Serialization do
   end
   
   defp traverse_and_prepare(data, 0), do: {:truncated, inspect(data)}
+  
+  defp traverse_and_prepare(%DateTime{} = data, _depth), do: data
+  
+  defp traverse_and_prepare(data, depth) when is_struct(data) do
+    # Handle other structs by keeping them as-is
+    data
+  end
   
   defp traverse_and_prepare(data, depth) when is_map(data) do
     Map.new(data, fn {k, v} -> 
@@ -344,7 +355,7 @@ defmodule Object.Serialization do
   end
   
   defp validate_object_data(%{__struct__: "Object", __version__: 1} = data) do
-    required_fields = [:id, :type, :state]
+    required_fields = [:id, :subtype, :state]
     
     if Enum.all?(required_fields, &Map.has_key?(data, &1)) do
       :ok
@@ -358,7 +369,7 @@ defmodule Object.Serialization do
     object = %Object{
       id: data.id,
       state: data.state,
-      subtype: Map.get(data, :type, :ai_agent),
+      subtype: Map.get(data, :subtype, :ai_agent),
       methods: Map.get(data, :methods, []),
       mailbox: nil,
       goal: nil,

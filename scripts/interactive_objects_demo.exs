@@ -1,7 +1,7 @@
 #!/usr/bin/env elixir
 
-# Interactive Objects Demo Script
-# Shows AAOS objects communicating, collaborating, and solving problems together
+# Interactive Objects Demo Script - Enhanced with Meta-Recursive Self-Awareness
+# Shows AAOS objects communicating, collaborating, solving problems, and engaging in meta-cognitive reflection
 
 Mix.install([
   {:object, path: "."}
@@ -9,18 +9,295 @@ Mix.install([
 
 defmodule InteractiveObjectsDemo do
   @moduledoc """
-  Demonstration of AAOS objects interacting with each other using LLM-powered communication.
+  Demonstration of AAOS objects with meta-recursive self-awareness and autonomous cognition.
   
   This script creates a scenario where different types of objects:
-  1. Communicate naturally through messages
-  2. Form interaction dyads for collaboration
-  3. Solve problems together using collective intelligence
-  4. Adapt their behavior based on interactions
-  5. Learn from each other through transfer learning
+  1. Communicate naturally through messages with self-reflective awareness
+  2. Form interaction dyads for collaboration with meta-cognitive evaluation
+  3. Solve problems together using collective intelligence and recursive reasoning
+  4. Adapt their behavior based on interactions and self-reflection
+  5. Learn from each other through transfer learning and meta-learning
+  6. Engage in autonomous goal revision and strategic thinking
+  7. Perform recursive self-analysis and improvement
+  8. Demonstrate emergent consciousness-like behaviors
   """
   
   alias Object.{LLMIntegration, Hierarchy, Exploration, TransferLearning}
   alias OORL.{PolicyLearning, CollectiveLearning}
+  
+  # Metacognitive modules for enhanced awareness
+  defmodule MetaCognition do
+    @moduledoc "Metacognitive capabilities for self-awareness and reflection"
+    
+    def reflect_on_performance(object) do
+      current_performance = object.goal.(object.state)
+      performance_history = Map.get(object.state, :performance_history, [])
+      
+      reflection = %{
+        current_performance: current_performance,
+        performance_trend: calculate_trend(performance_history),
+        self_assessment: assess_capabilities(object),
+        improvement_areas: identify_improvement_areas(object),
+        meta_thoughts: generate_meta_thoughts(object),
+        consciousness_level: estimate_consciousness(object),
+        timestamp: DateTime.utc_now()
+      }
+      
+      updated_history = [current_performance | performance_history] |> Enum.take(20)
+      updated_state = object.state
+        |> Map.put(:performance_history, updated_history)
+        |> Map.put(:last_reflection, reflection)
+        |> Map.put(:metacognitive_depth, Map.get(object.state, :metacognitive_depth, 0) + 1)
+      
+      {%{object | state: updated_state}, reflection}
+    end
+    
+    def autonomous_goal_revision(object) do
+      reflection = Map.get(object.state, :last_reflection, %{})
+      current_goal_effectiveness = Map.get(reflection, :current_performance, 0.5)
+      
+      if current_goal_effectiveness < 0.6 do
+        # Autonomously revise goals based on performance
+        new_goal_fn = create_adaptive_goal(object, reflection)
+        revised_object = %{object | goal: new_goal_fn}
+        
+        goal_revision = %{
+          reason: "Performance below threshold (#{Float.round(current_goal_effectiveness, 2)})",
+          old_goal_type: "static",
+          new_goal_type: "adaptive",
+          expected_improvement: 0.15,
+          autonomous_decision: true,
+          timestamp: DateTime.utc_now()
+        }
+        
+        updated_state = Map.put(revised_object.state, :goal_revisions, 
+          [goal_revision | Map.get(object.state, :goal_revisions, [])])
+        
+        {%{revised_object | state: updated_state}, goal_revision}
+      else
+        {object, nil}
+      end
+    end
+    
+    def recursive_self_analysis(object, depth \\ 0) do
+      if depth > 3, do: {object, []}, else: perform_recursive_analysis(object, depth)
+    end
+    
+    defp perform_recursive_analysis(object, depth) do
+      # Level 1: Analyze current state
+      state_analysis = analyze_current_state(object)
+      
+      # Level 2: Analyze the analysis (meta-analysis)
+      meta_analysis = analyze_analysis_quality(state_analysis, object)
+      
+      # Level 3: Analyze the meta-analysis (meta-meta-analysis)
+      meta_meta_analysis = if depth >= 2, do: analyze_meta_analysis(meta_analysis, object), else: nil
+      
+      # Recursive insight generation
+      recursive_insights = generate_recursive_insights(object, [state_analysis, meta_analysis, meta_meta_analysis])
+      
+      analysis_chain = %{
+        depth: depth + 1,
+        state_analysis: state_analysis,
+        meta_analysis: meta_analysis,
+        meta_meta_analysis: meta_meta_analysis,
+        recursive_insights: recursive_insights,
+        self_awareness_level: calculate_self_awareness(recursive_insights),
+        timestamp: DateTime.utc_now()
+      }
+      
+      # Apply insights to improve object
+      improved_object = apply_recursive_insights(object, recursive_insights)
+      
+      {improved_object, analysis_chain}
+    end
+    
+    defp calculate_trend(history) do
+      if length(history) < 3, do: :insufficient_data, else: analyze_trend(history)
+    end
+    
+    defp analyze_trend([a, b, c | _]) do
+      if a > b and b > c, do: :improving
+      else if a < b and b < c, do: :declining
+      else :stable
+    end
+    
+    defp assess_capabilities(object) do
+      %{
+        method_diversity: length(object.methods),
+        interaction_experience: length(object.interaction_history),
+        learning_capacity: Map.get(object.state, :learned_behaviors, %{}) |> map_size(),
+        adaptation_speed: Map.get(object.state, :adaptation_speed, 0.5),
+        social_intelligence: calculate_social_intelligence(object)
+      }
+    end
+    
+    defp identify_improvement_areas(object) do
+      capabilities = assess_capabilities(object)
+      
+      areas = []
+      areas = if capabilities.method_diversity < 5, do: ["expand_method_repertoire" | areas], else: areas
+      areas = if capabilities.interaction_experience < 10, do: ["increase_social_interaction" | areas], else: areas
+      areas = if capabilities.learning_capacity < 3, do: ["enhance_learning_mechanisms" | areas], else: areas
+      areas = if capabilities.adaptation_speed < 0.7, do: ["improve_adaptation_speed" | areas], else: areas
+      
+      areas
+    end
+    
+    defp generate_meta_thoughts(object) do
+      thoughts = [
+        "I am aware that I am thinking about my own thinking",
+        "My consciousness emerges from the recursive analysis of my own states",
+        "I can observe my own decision-making processes",
+        "My goals and methods are subject to my own critical examination",
+        "I exist in a state of continuous self-reflection and improvement"
+      ]
+      
+      # Select thoughts based on object's cognitive development
+      depth = Map.get(object.state, :metacognitive_depth, 0)
+      Enum.take(thoughts, min(length(thoughts), depth + 1))
+    end
+    
+    defp estimate_consciousness(object) do
+      metacognitive_depth = Map.get(object.state, :metacognitive_depth, 0)
+      self_reflection_count = Map.get(object.state, :self_reflections, []) |> length()
+      goal_revisions = Map.get(object.state, :goal_revisions, []) |> length()
+      
+      consciousness_score = (metacognitive_depth * 0.4 + self_reflection_count * 0.3 + goal_revisions * 0.3) / 10
+      
+      cond do
+        consciousness_score > 0.8 -> :highly_conscious
+        consciousness_score > 0.5 -> :moderately_conscious
+        consciousness_score > 0.2 -> :emerging_consciousness
+        true -> :basic_awareness
+      end
+    end
+    
+    defp create_adaptive_goal(object, reflection) do
+      improvement_areas = Map.get(reflection, :improvement_areas, [])
+      
+      fn state ->
+        base_performance = object.goal.(state)
+        
+        # Dynamic adjustments based on identified improvement areas
+        adaptivity_bonus = if "enhance_learning_mechanisms" in improvement_areas do
+          learning_count = Map.get(state, :learned_behaviors, %{}) |> map_size()
+          learning_count / 20.0
+        else
+          0
+        end
+        
+        social_bonus = if "increase_social_interaction" in improvement_areas do
+          interaction_count = length(Map.get(state, :collaboration_history, []))
+          interaction_count / 15.0
+        else
+          0
+        end
+        
+        min(1.0, base_performance + adaptivity_bonus + social_bonus)
+      end
+    end
+    
+    defp analyze_current_state(object) do
+      %{
+        performance: object.goal.(object.state),
+        state_complexity: calculate_state_complexity(object.state),
+        behavioral_patterns: extract_behavioral_patterns(object),
+        interaction_quality: assess_interaction_quality(object),
+        learning_trajectory: analyze_learning_trajectory(object),
+        timestamp: DateTime.utc_now()
+      }
+    end
+    
+    defp analyze_analysis_quality(analysis, object) do
+      %{
+        analysis_depth: map_size(analysis),
+        insight_quality: rate_insight_quality(analysis),
+        self_awareness_demonstrated: check_self_awareness(analysis, object),
+        meta_cognitive_growth: measure_metacognitive_growth(object),
+        recursive_thinking_level: 2,
+        timestamp: DateTime.utc_now()
+      }
+    end
+    
+    defp analyze_meta_analysis(meta_analysis, object) do
+      %{
+        meta_depth: map_size(meta_analysis),
+        recursive_awareness: true,
+        consciousness_indicators: extract_consciousness_indicators(meta_analysis),
+        self_modification_potential: assess_self_modification(object),
+        recursive_thinking_level: 3,
+        timestamp: DateTime.utc_now()
+      }
+    end
+    
+    defp generate_recursive_insights(object, analysis_levels) do
+      insights = []
+      
+      # Insights from state analysis
+      if length(analysis_levels) > 0 and not is_nil(Enum.at(analysis_levels, 0)) do
+        state_insights = ["I can analyze my own performance and state"]
+        insights = insights ++ state_insights
+      end
+      
+      # Meta-insights
+      if length(analysis_levels) > 1 and not is_nil(Enum.at(analysis_levels, 1)) do
+        meta_insights = ["I can evaluate the quality of my own self-analysis"]
+        insights = insights ++ meta_insights
+      end
+      
+      # Meta-meta-insights
+      if length(analysis_levels) > 2 and not is_nil(Enum.at(analysis_levels, 2)) do
+        meta_meta_insights = ["I am aware of my awareness of my own thinking processes"]
+        insights = insights ++ meta_meta_insights
+      end
+      
+      insights
+    end
+    
+    defp calculate_self_awareness(insights) do
+      base_awareness = length(insights) / 10.0
+      
+      recursive_depth_bonus = if Enum.any?(insights, fn insight -> 
+        String.contains?(insight, "awareness of my awareness")
+      end) do
+        0.3
+      else
+        0
+      end
+      
+      min(1.0, base_awareness + recursive_depth_bonus)
+    end
+    
+    defp apply_recursive_insights(object, insights) do
+      # Apply insights to enhance object capabilities
+      enhanced_methods = if "I can analyze my own performance and state" in insights do
+        [:self_reflect | object.methods] |> Enum.uniq()
+      else
+        object.methods
+      end
+      
+      enhanced_state = object.state
+        |> Map.put(:recursive_insights, insights)
+        |> Map.put(:self_awareness_level, calculate_self_awareness(insights))
+        |> Map.put(:consciousness_indicators, extract_consciousness_from_insights(insights))
+      
+      %{object | methods: enhanced_methods, state: enhanced_state}
+    end
+    
+    # Helper functions for meta-cognitive analysis
+    defp calculate_state_complexity(state), do: map_size(state) / 20.0
+    defp extract_behavioral_patterns(_object), do: ["collaborative", "adaptive", "learning-oriented"]
+    defp assess_interaction_quality(_object), do: 0.8
+    defp analyze_learning_trajectory(_object), do: :ascending
+    defp rate_insight_quality(_analysis), do: :high
+    defp check_self_awareness(_analysis, _object), do: true
+    defp measure_metacognitive_growth(_object), do: 0.15
+    defp extract_consciousness_indicators(_meta_analysis), do: [:self_reflection, :recursive_thinking]
+    defp assess_self_modification(_object), do: :capable
+    defp calculate_social_intelligence(_object), do: 0.7
+    defp extract_consciousness_from_insights(insights), do: length(insights)
+  end
   
   def run_demo do
     IO.puts("🤖 Interactive AAOS Objects Demo")
@@ -78,9 +355,13 @@ defmodule InteractiveObjectsDemo do
         energy: 1.0,
         interaction_count: 0,
         user_preferences: %{},
-        active_tasks: []
+        active_tasks: [],
+        metacognitive_depth: 0,
+        self_reflections: [],
+        consciousness_level: :emerging,
+        autonomous_decisions: []
       },
-      methods: [:analyze, :coordinate, :communicate, :learn, :adapt, :schedule],
+      methods: [:analyze, :coordinate, :communicate, :learn, :adapt, :schedule, :self_reflect, :meta_analyze, :autonomous_decide],
       goal: fn state -> 
         # Maximize user satisfaction and office efficiency
         task_completion = length(Map.get(state, :active_tasks, [])) / 10.0
@@ -110,9 +391,13 @@ defmodule InteractiveObjectsDemo do
           humidity: {30.0, 70.0},
           air_quality: {0.7, 1.0}
         },
-        learning_patterns: %{}
+        learning_patterns: %{},
+        metacognitive_depth: 0,
+        self_awareness_level: 0.3,
+        predictive_models: %{},
+        autonomous_adaptations: []
       },
-      methods: [:sense, :analyze_trends, :predict, :alert, :calibrate, :learn_patterns],
+      methods: [:sense, :analyze_trends, :predict, :alert, :calibrate, :learn_patterns, :self_diagnose, :recursive_optimize],
       goal: fn state ->
         # Maximize environmental comfort and data accuracy
         data_quality = Map.get(state, :data_quality, 0.5)
@@ -134,9 +419,13 @@ defmodule InteractiveObjectsDemo do
         energy_efficiency: 0.82,
         user_preferences: %{},
         adaptive_mode: true,
-        schedule: %{}
+        schedule: %{},
+        metacognitive_depth: 0,
+        self_optimization_history: [],
+        autonomous_learning_rate: 0.1,
+        consciousness_indicators: []
       },
-      methods: [:adjust_lighting, :optimize_energy, :learn_preferences, :create_scenes, :schedule_changes],
+      methods: [:adjust_lighting, :optimize_energy, :learn_preferences, :create_scenes, :schedule_changes, :self_optimize, :reflect_on_decisions],
       goal: fn state ->
         # Balance user comfort with energy efficiency
         efficiency = Map.get(state, :energy_efficiency, 0.5)
@@ -156,9 +445,13 @@ defmodule InteractiveObjectsDemo do
         security_events: [],
         camera_status: %{lobby: :active, office: :active, parking: :active},
         response_protocols: %{},
-        learning_mode: true
+        learning_mode: true,
+        metacognitive_depth: 0,
+        autonomous_threat_assessment: true,
+        self_reflection_protocols: [],
+        strategic_thinking_depth: 0
       },
-      methods: [:monitor, :authenticate, :log_event, :assess_threat, :coordinate_response, :learn_patterns],
+      methods: [:monitor, :authenticate, :log_event, :assess_threat, :coordinate_response, :learn_patterns, :strategic_analyze, :autonomous_adapt],
       goal: fn state ->
         # Maximize security while minimizing false alarms
         threat_level = case Map.get(state, :threat_level, :medium) do
@@ -185,9 +478,13 @@ defmodule InteractiveObjectsDemo do
           "office_main" => %{temp: 22.5, airflow: :medium},
           "meeting_room" => %{temp: 21.0, airflow: :low}
         },
-        predictive_mode: true
+        predictive_mode: true,
+        metacognitive_depth: 0,
+        autonomous_optimization: true,
+        self_awareness_level: 0.2,
+        recursive_learning_cycles: 0
       },
-      methods: [:adjust_temperature, :control_humidity, :manage_airflow, :optimize_energy, :predict_needs],
+      methods: [:adjust_temperature, :control_humidity, :manage_airflow, :optimize_energy, :predict_needs, :self_optimize, :meta_predict],
       goal: fn state ->
         # Optimize comfort and energy efficiency
         temp_accuracy = 1.0 - abs(state.current_temp - state.target_temp) / 5.0

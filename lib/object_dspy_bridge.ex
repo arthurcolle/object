@@ -9,7 +9,7 @@ defmodule Object.DSPyBridge do
   require Logger
 
   @default_lm_client Object.DSPyBridge.MockLMStudio
-  @openai_client Object.OpenAIClient
+  # @openai_client Object.OpenAIClient
 
   defstruct [
     :object_id,
@@ -139,9 +139,6 @@ defmodule Object.DSPyBridge do
     end
   end
 
-  @doc """
-  Public version of execute_signature for the missing Object.DSPyBridge.execute_signature/2 function
-  """
   def execute_signature(signature, params) when is_map(signature) do
     # Create a mock object ID for direct signature execution
     object_id = "signature_exec_#{System.unique_integer([:positive])}"

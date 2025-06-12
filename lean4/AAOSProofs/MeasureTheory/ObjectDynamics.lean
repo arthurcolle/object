@@ -4,9 +4,10 @@
   This module formalizes the stochastic dynamics of objects.
 -/
 
-import Mathlib.MeasureTheory.Measure.MeasureSpace
 import Mathlib.MeasureTheory.MeasurableSpace.Basic
+import Mathlib.MeasureTheory.Measure.MeasureSpaceDef
 import Mathlib.Topology.MetricSpace.Basic
+import Mathlib.Topology.Instances.Real
 
 namespace AAOSProofs.MeasureTheory
 
@@ -30,14 +31,14 @@ def step (obj : AutonomousObject) (s : obj.S) : obj.S :=
 
 /-- A measure is invariant if preserved by dynamics -/
 def isInvariant (obj : AutonomousObject) [inst : MeasurableSpace obj.S] 
-  (μ : @Measure obj.S inst) : Prop :=
+  (μ : Measure obj.S) : Prop :=
   ∀ (B : Set obj.S), MeasurableSet B → 
     μ B = μ (step obj ⁻¹' B)
 
 /-- Existence of invariant measures for compact spaces -/
 theorem exists_invariant_measure (obj : AutonomousObject) 
   [CompactSpace obj.S] [inst : MeasurableSpace obj.S] :
-  ∃ μ : @Measure obj.S inst, isInvariant obj μ :=
+  ∃ μ : Measure obj.S, isInvariant obj μ :=
 by
   sorry -- Krylov-Bogolyubov theorem
 
@@ -49,7 +50,7 @@ def learn (obj : AutonomousObject) (data : List (obj.S × obj.A)) : AutonomousOb
 
 /-- Convergence of learning dynamics -/
 theorem learning_convergence (obj : AutonomousObject) [inst : MeasurableSpace obj.S]
-  (μ : @Measure obj.S inst) (hInv : isInvariant obj μ) :
+  (μ : Measure obj.S) (hInv : isInvariant obj μ) :
   ∃ (optimal : obj.S → obj.A), Measurable optimal ∧ 
     ∀ ε > 0, ∃ N, ∀ n ≥ N, 
       μ {s | dist (iterate (step obj) n s) (step {obj with policy := optimal} s) < ε} > 1 - ε :=

@@ -4,8 +4,15 @@ defmodule Object.NetworkProxyTest do
 
   setup do
     # Start required services
-    {:ok, _} = Object.NetworkTransport.start_link()
-    {:ok, _} = Object.DistributedRegistry.start_link()
+    case Object.NetworkTransport.start_link() do
+      {:ok, _} -> :ok
+      {:error, {:already_started, _}} -> :ok
+    end
+    
+    case Object.DistributedRegistry.start_link() do
+      {:ok, _} -> :ok
+      {:error, {:already_started, _}} -> :ok
+    end
     
     # Create a test object
     test_object = Object.new(

@@ -5,13 +5,13 @@
   provable advantages for exploration in reinforcement learning.
 -/
 
-import Mathlib.QuantumMechanics.Basic
-import Mathlib.LinearAlgebra.TensorProduct
+import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Data.Complex.Basic
 
-namespace AAOS.QuantumInspired
+namespace AAOSProofs.QuantumInspired
 
-open QuantumMechanics TensorProduct
+open Complex Matrix
 
 /-- Quantum state representation for exploration -/
 def QuantumState (S A : Type*) [Fintype S] [Fintype A] :=
@@ -79,4 +79,4 @@ by
   -- Show quadratic speedup
   sorry
 
-end AAOS.QuantumInspired
+end AAOSProofs.QuantumInspired

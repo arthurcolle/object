@@ -110,6 +110,16 @@ defmodule Object.OpenAIClient do
     end
   end
   
+  def handle_call({:stream_chat, messages, opts}, from, state) do
+    # Start async task for streaming
+    Task.start(fn ->
+      result = stream_request(messages, opts, state)
+      GenServer.reply(from, result)
+    end)
+    
+    {:noreply, state}
+  end
+  
   # Private functions
   
   defp make_chat_request(messages, opts, state) do
@@ -309,16 +319,6 @@ defmodule Object.OpenAIClient do
   def stream_chat_completion(messages, opts \\ []) do
     opts_with_stream = Keyword.put(opts, :stream, true)
     GenServer.call(__MODULE__, {:stream_chat, messages, opts_with_stream}, :infinity)
-  end
-  
-  def handle_call({:stream_chat, messages, opts}, from, state) do
-    # Start async task for streaming
-    Task.start(fn ->
-      result = stream_request(messages, opts, state)
-      GenServer.reply(from, result)
-    end)
-    
-    {:noreply, state}
   end
   
   defp stream_request(_messages, _opts, _state) do
