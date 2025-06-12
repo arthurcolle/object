@@ -163,10 +163,6 @@ defmodule Object.Supervisor do
   
   # Public API functions that can be called directly
   
-  def restart_child_with_backoff(child_id) do
-    restart_child_with_progressive_backoff(child_id)
-  end
-  
   def trigger_health_check do
     perform_supervision_health_check()
   end
@@ -276,7 +272,7 @@ defmodule Object.Supervisor do
     }
   end
   
-  defp resource_monitor_spec(_opts) do
+  defp resource_monitor_spec(opts) do
     # Resource monitoring disabled - Object.ResourceMonitor not available
     if Keyword.get(opts, :enable_resource_monitoring, false) do
       # Return a minimal placeholder
@@ -291,7 +287,7 @@ defmodule Object.Supervisor do
     end
   end
   
-  defp health_monitor_spec(_opts) do
+  defp health_monitor_spec(opts) do
     # Health monitoring disabled - Object.HealthMonitor not available
     if Keyword.get(opts, :enable_health_monitoring, false) do
       # Return a minimal placeholder
