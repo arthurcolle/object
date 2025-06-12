@@ -155,7 +155,7 @@ defmodule OORL.MCTS do
     end
   end
 
-  defp expand_node(node, environment, mcts_config) do
+  defp expand_node(node, environment, _mcts_config) do
     if node.is_terminal or length(node.available_actions) == 0 do
       node
     else
@@ -238,7 +238,7 @@ defmodule OORL.MCTS do
     end
   end
 
-  defp backpropagate(node, reward, _mcts_config) do
+  defp backpropagate(node, reward, mcts_config) do
     if node do
       updated_node = %{node | 
         visits: node.visits + 1,
@@ -247,7 +247,7 @@ defmodule OORL.MCTS do
       }
       
       if node.parent do
-        backpropagate(node.parent, reward, _mcts_config)
+        backpropagate(node.parent, reward, mcts_config)
       end
       
       updated_node
@@ -402,10 +402,10 @@ defmodule OORL.MCTS do
 
   defp mock_transition(state, action) do
     case {state, action} do
-      {%{x: x, y: y}, :up} -> %{state | y: y + 1}
-      {%{x: x, y: y}, :down} -> %{state | y: y - 1}
-      {%{x: x, y: y}, :left} -> %{state | x: x - 1}
-      {%{x: x, y: y}, :right} -> %{state | x: x + 1}
+      {%{x: _x, y: y}, :up} -> %{state | y: y + 1}
+      {%{x: _x, y: y}, :down} -> %{state | y: y - 1}
+      {%{x: x, y: _y}, :left} -> %{state | x: x - 1}
+      {%{x: x, y: _y}, :right} -> %{state | x: x + 1}
       _ -> state
     end
   end

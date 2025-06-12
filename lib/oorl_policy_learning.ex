@@ -9,6 +9,8 @@ defmodule OORL.PolicyLearning do
   - Meta-learning for strategy adaptation
   """
 
+  require Logger
+
   @type t :: %__MODULE__{
     policy_type: policy_type() | nil,
     learning_rate: float() | nil,
@@ -334,10 +336,10 @@ defmodule OORL.PolicyLearning do
     normalize_gradients(gradients, length(training_batch))
   end
 
-  defp compute_linear_gradients(training_batch, policy_network) do
+  defp compute_linear_gradients(training_batch, _policy_network) do
     # Linear policy gradient computation
     Enum.reduce(training_batch, %{weights: [], bias: 0.0}, fn experience, acc ->
-      {state, action, reward, _next_state} = experience
+      {state, _action, reward, _next_state} = experience
       
       # Simple linear gradient: gradient = (reward - baseline) * state
       baseline = 0.0  # Could be a learned baseline
@@ -682,20 +684,20 @@ defmodule OORL.PolicyLearning do
 
   # Additional placeholder functions
   defp merge_gradients(acc, gradient), do: Map.merge(acc, gradient)
-  defp normalize_gradients(gradients, count), do: gradients
+  defp normalize_gradients(gradients, _count), do: gradients
   defp compute_policy_gradient(_output, _action, _reward), do: %{}
   defp extract_policy_gradients(_peer_policy), do: %{}
   defp average_gradients(gradients), do: List.first(gradients) || %{}
   defp combine_gradients(g1, g2, _weight), do: Map.merge(g1, g2)
-  defp update_layer_weights(current, gradient, lr), do: current
+  defp update_layer_weights(current, _gradient, _lr), do: current
   defp get_nested(map, keys, default), do: get_in(map, keys) || default
   defp put_nested(map, keys, value), do: put_in(map, keys, value)
   defp get_max_q_value(_state, _q_table), do: 0.0
   defp compute_curiosity_values(_state, _config), do: [0.1, 0.1]
-  defp combine_values(v1, v2, weight), do: v1
+  defp combine_values(v1, _v2, _weight), do: v1
   defp compute_action_probabilities(_network, _state), do: [0.5, 0.5]
   defp average_action_probabilities(probs), do: List.first(probs) || [0.5, 0.5]
-  defp combine_action_probabilities(p1, p2, weight), do: p1
-  defp sample_from_probabilities(probs), do: 0
-  defp softmax_probabilities(values, temperature), do: values
+  defp combine_action_probabilities(p1, _p2, _weight), do: p1
+  defp sample_from_probabilities(_probs), do: 0
+  defp softmax_probabilities(values, _temperature), do: values
 end

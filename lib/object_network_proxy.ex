@@ -20,7 +20,7 @@ defmodule Object.NetworkProxy do
   use GenServer
   require Logger
   
-  alias Object.{NetworkTransport, NetworkProtocol, Serialization, DistributedRegistry}
+  alias Object.{NetworkTransport, NetworkProtocol, DistributedRegistry}
   
   @default_timeout 5_000
   @max_retries 3
@@ -206,7 +206,7 @@ defmodule Object.NetworkProxy do
     case lookup_remote_node(state.object_id) do
       {:ok, node_info} ->
         {:reply, :ok, %{state | remote_node: node_info}}
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -216,7 +216,7 @@ defmodule Object.NetworkProxy do
     # Fire and forget - no response needed
     case state.remote_node do
       nil ->
-        Logger.warn("Cannot cast to unknown remote node")
+        Logger.warning("Cannot cast to unknown remote node")
         {:noreply, state}
         
       node ->
@@ -546,19 +546,21 @@ defmodule Object.NetworkProxy do
   
   # Statistics
   
-  defp update_stats(stats, :cache_hit) do
+  defp update_stats(stats, action, latency \\ nil)
+  
+  defp update_stats(stats, :cache_hit, _) do
     %{stats | 
       cache_hits: stats.cache_hits + 1
     }
   end
   
-  defp update_stats(stats, :call_initiated) do
+  defp update_stats(stats, :call_initiated, _) do
     %{stats | 
       total_calls: stats.total_calls + 1
     }
   end
   
-  defp update_stats(stats, :cast) do
+  defp update_stats(stats, :cast, _) do
     %{stats | 
       total_calls: stats.total_calls + 1,
       successful_calls: stats.successful_calls + 1
@@ -576,7 +578,7 @@ defmodule Object.NetworkProxy do
     }
   end
   
-  defp update_stats(stats, :failure) do
+  defp update_stats(stats, :failure, _) do
     %{stats | 
       failed_calls: stats.failed_calls + 1
     }

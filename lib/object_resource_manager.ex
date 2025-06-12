@@ -56,12 +56,16 @@ defmodule Object.ResourceManager do
   end
 
   defp get_cpu_usage do
-    case :cpu_sup.avg1() / 256 do
-      usage when usage >= 0 -> usage
-      _ -> 0.0
-    end
+    # cpu_sup is not available on all systems, fallback to scheduler usage
+    schedulers = :erlang.system_info(:schedulers_online)
+    :erlang.statistics(:scheduler_wall_time)
+    |> Enum.take(schedulers)
+    |> Enum.reduce(0.0, fn {_id, active, total}, acc ->
+      if total > 0, do: acc + (active / total), else: acc
+    end)
+    |> Kernel./(schedulers)
   rescue
-    _ -> 0.0
+    _ -> 0.5  # Default to 50% if we can't get CPU usage
   end
 
   defp trigger_emergency_shutdown(resource_manager) do
@@ -236,7 +240,7 @@ defmodule Object.ResourceManager do
     Enum.reverse(allocations)
   end
 
-  defp calculate_fair_ratio(object_demand, total_demand, available) do
+  defp calculate_fair_ratio(_object_demand, total_demand, available) do
     resource_ratios = [
       available.memory / max(total_demand.memory, 1),
       available.cpu / max(total_demand.cpu, 1),

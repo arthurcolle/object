@@ -229,7 +229,7 @@ defmodule Object.NetworkTransport do
         
       conn ->
         close_connection(conn)
-        new_state = Map.delete(state.connections, conn_id)
+        new_state = %{state | connections: Map.delete(state.connections, conn_id)}
         new_state = update_metrics(new_state, :connection_closed)
         {:noreply, new_state}
     end
@@ -245,9 +245,9 @@ defmodule Object.NetworkTransport do
       current_time = DateTime.to_unix(now, :millisecond)
       
       if current_time - last_activity > timeout_threshold do
-        Logger.warn("Connection #{conn_id} timed out, closing")
+        Logger.warning("Connection #{conn_id} timed out, closing")
         close_connection(conn)
-        Map.delete(acc.connections, conn_id)
+        %{acc | connections: Map.delete(acc.connections, conn_id)}
       else
         # Send keepalive for TCP connections
         if conn.transport == :tcp and conn.state == :connected do
@@ -280,7 +280,7 @@ defmodule Object.NetworkTransport do
         {:noreply, new_state}
         
       nil ->
-        Logger.warn("Received data from unknown socket")
+        Logger.warning("Received data from unknown socket")
         {:noreply, state}
     end
   end
@@ -359,7 +359,7 @@ defmodule Object.NetworkTransport do
     end
   end
   
-  defp establish_connection(host, port, :udp, _ssl, opts) do
+  defp establish_connection(host, port, :udp, _ssl, _opts) do
     udp_opts = [
       :binary,
       active: true,
@@ -462,7 +462,7 @@ defmodule Object.NetworkTransport do
     }
   end
   
-  defp handle_send_error(conn, reason) do
+  defp handle_send_error(conn, _reason) do
     cb = update_circuit_breaker(conn.circuit_breaker, :failure)
     %{conn | 
       error_count: conn.error_count + 1,
@@ -536,7 +536,7 @@ defmodule Object.NetworkTransport do
   
   defp handle_connection_closed(state, conn_id, conn) do
     close_connection(conn)
-    new_state = Map.delete(state.connections, conn_id)
+    new_state = %{state | connections: Map.delete(state.connections, conn_id)}
     update_metrics(new_state, :connection_closed)
   end
   

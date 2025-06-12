@@ -1,0 +1,285 @@
+name: Baseline Regression Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      full_suite:
+        description: 'Run full baseline suite'
+        required: false
+        default: 'false'
+
+jobs:
+  baseline-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    strategy:
+      matrix:
+        otp: ['26.0']
+        elixir: ['1.15.0']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Need full history for baseline comparisons
+      
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-
+      
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix compile
+      
+      - name: Create benchmark results directory
+        run: mkdir -p benchmarks/results
+      
+      - name: Run performance baseline tests
+        run: |
+          mix test test/performance_baseline_test.exs --max-failures 1
+        env:
+          MIX_ENV: test
+      
+      - name: Run quick baseline benchmarks
+        if: github.event.inputs.full_suite != 'true'
+        run: |
+          # Run with reduced iterations for CI
+          MIX_ENV=ci mix run benchmarks/run_baselines.exs
+        timeout-minutes: 15
+      
+      - name: Run full baseline suite
+        if: github.event.inputs.full_suite == 'true' || github.event_name == 'schedule'
+        run: |
+          mix run benchmarks/run_baselines.exs
+        timeout-minutes: 45
+      
+      - name: Load previous baseline
+        id: load-baseline
+        run: |
+          # Try to fetch previous baseline from artifacts
+          if [ -f benchmarks/baseline_metrics.json ]; then
+            echo "baseline_exists=true" >> $GITHUB_OUTPUT
+            cp benchmarks/baseline_metrics.json benchmarks/previous_baseline.json
+          else
+            echo "baseline_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Compare baselines
+        if: steps.load-baseline.outputs.baseline_exists == 'true'
+        run: |
+          # Create comparison script
+          cat > compare_baselines.exs << 'EOF'
+          # Load current and previous baselines
+          current = File.read!("benchmarks/baseline_metrics.json") |> Jason.decode!()
+          previous = File.read!("benchmarks/previous_baseline.json") |> Jason.decode!()
+          
+          regressions = []
+          improvements = []
+          
+          Enum.each(current, fn {metric, current_value} ->
+            previous_value = Map.get(previous, metric, current_value)
+            change_percent = (current_value - previous_value) / previous_value * 100
+            
+            cond do
+              change_percent < -5 ->
+                regressions = [{metric, change_percent} | regressions]
+              change_percent > 5 ->
+                improvements = [{metric, change_percent} | improvements]
+              true ->
+                nil
+            end
+          end)
+          
+          # Generate report
+          report = """
+          # Baseline Comparison Report
+          
+          ## Summary
+          - Regressions: #{length(regressions)}
+          - Improvements: #{length(improvements)}
+          
+          ## Details
+          
+          ### Regressions
+          #{Enum.map(regressions, fn {metric, change} -> "- #{metric}: #{Float.round(change, 2)}%" end) |> Enum.join("\n")}
+          
+          ### Improvements
+          #{Enum.map(improvements, fn {metric, change} -> "- #{metric}: +#{Float.round(change, 2)}%" end) |> Enum.join("\n")}
+          """
+          
+          File.write!("benchmarks/comparison_report.md", report)
+          
+          # Exit with error if regressions detected
+          if length(regressions) > 0 do
+            IO.puts("❌ Performance regressions detected!")
+            System.halt(1)
+          else
+            IO.puts("✅ No performance regressions detected")
+          end
+          EOF
+          
+          mix run compare_baselines.exs
+      
+      - name: Generate visualizations
+        if: always()
+        run: |
+          # Create a simple visualization script
+          cat > generate_charts.exs << 'EOF'
+          # Generate performance charts
+          IO.puts("📊 Generating performance visualizations...")
+          
+          # This would integrate with a charting library
+          # For now, create a simple text summary
+          
+          if File.exists?("benchmarks/baseline_metrics.json") do
+            metrics = File.read!("benchmarks/baseline_metrics.json") |> Jason.decode!()
+            
+            summary = """
+            # Performance Summary
+            
+            | Metric | Value | Status |
+            |--------|-------|--------|
+            #{Enum.map(metrics, fn {k, v} -> "| #{k} | #{round(v)} | ✅ |" end) |> Enum.join("\n")}
+            
+            Generated at: #{DateTime.utc_now() |> DateTime.to_string()}
+            """
+            
+            File.write!("benchmarks/performance_summary.md", summary)
+          end
+          EOF
+          
+          mix run generate_charts.exs
+      
+      - name: Upload baseline results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: baseline-results-${{ github.sha }}
+          path: |
+            benchmarks/results/
+            benchmarks/baseline_metrics.json
+            benchmarks/comparison_report.md
+            benchmarks/performance_summary.md
+            benchmarks/baseline_report.md
+          retention-days: 90
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 📊 Baseline Performance Report\n\n';
+            
+            // Add summary if exists
+            try {
+              const summary = fs.readFileSync('benchmarks/performance_summary.md', 'utf8');
+              comment += summary + '\n\n';
+            } catch (e) {
+              comment += 'Performance summary not available.\n\n';
+            }
+            
+            // Add comparison if exists
+            try {
+              const comparison = fs.readFileSync('benchmarks/comparison_report.md', 'utf8');
+              comment += comparison + '\n\n';
+            } catch (e) {
+              comment += 'No baseline comparison available.\n\n';
+            }
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Baseline Performance Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+      
+      - name: Save baseline for main branch
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/cache@v3
+        with:
+          path: benchmarks/baseline_metrics.json
+          key: baseline-main-${{ github.sha }}
+      
+      - name: Notify on regression
+        if: failure() && github.event_name == 'push'
+        run: |
+          echo "::error::Performance regression detected! Check the baseline comparison report."
+
+  baseline-comparison-matrix:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.full_suite == 'true'
+    needs: baseline-regression
+    
+    strategy:
+      matrix:
+        comparison: [actor_systems, multi_agent_systems, rl_frameworks]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.15.0'
+          otp-version: '26.0'
+      
+      - name: Run comparison benchmarks
+        run: |
+          echo "Running ${{ matrix.comparison }} comparison..."
+          # This would run specific comparison benchmarks
+          # For now, just create a placeholder
+          mkdir -p benchmarks/comparisons
+          echo "Comparison results for ${{ matrix.comparison }}" > benchmarks/comparisons/${{ matrix.comparison }}.txt
+      
+      - name: Upload comparison results
+        uses: actions/upload-artifact@v3
+        with:
+          name: comparison-${{ matrix.comparison }}-${{ github.sha }}
+          path: benchmarks/comparisons/
+          retention-days: 30

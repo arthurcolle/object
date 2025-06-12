@@ -166,7 +166,7 @@ defmodule Object.EncryptionTest do
       
       # Process should indicate if we're final destination
       result = Encryption.process_onion_message(onion)
-      assert {:ok, _, _} = result || {:error, :not_for_us} = result
+      assert match?({:ok, _, _}, result) || match?({:error, :not_for_us}, result)
     end
   end
 

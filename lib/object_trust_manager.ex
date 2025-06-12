@@ -127,7 +127,7 @@ defmodule Object.TrustManager do
     verified_reports = Enum.map(reports, fn report ->
       # Verify report truthfulness based on trust score
       trust_score = get_trust_score(trust_manager, report.object_id)
-      verification_threshold = trust_manager.verification_probability
+      _verification_threshold = trust_manager.verification_probability
       
       verified = if should_verify?(trust_manager, report.object_id) do
         # Simulate verification - in real system would cross-check with multiple sources

@@ -1,5 +1,5 @@
 defmodule Object.NetworkProtocol do
-  use Bitwise
+  import Bitwise
   @moduledoc """
   Binary protocol for efficient Object communication over network.
   
@@ -95,7 +95,8 @@ defmodule Object.NetworkProtocol do
   Decodes a binary message into structured format.
   """
   @spec decode(binary(), Keyword.t()) :: {:ok, message()} | {:error, term()}
-  def decode(data, opts \\ []) when byte_size(data) >= 8 do
+  def decode(data, opts \\ [])
+  def decode(data, opts) when byte_size(data) >= 8 do
     <<version::8, type::8, flags::16, length::32, payload::binary>> = data
     
     if length > @max_message_size do
@@ -332,10 +333,10 @@ defmodule Object.NetworkProtocol do
   
   defp build_flags(opts) do
     flags = 0
-    flags = if Keyword.get(opts, :compress, false), do: flags ||| @flag_compressed, else: flags
-    flags = if Keyword.get(opts, :encrypt, false), do: flags ||| @flag_encrypted, else: flags
-    flags = if Keyword.get(opts, :priority, :normal) == :high, do: flags ||| @flag_priority_high, else: flags
-    flags = if Keyword.get(opts, :requires_ack, false), do: flags ||| @flag_requires_ack, else: flags
+    flags = if Keyword.get(opts, :compress, false), do: Bitwise.bor(flags, @flag_compressed), else: flags
+    flags = if Keyword.get(opts, :encrypt, false), do: Bitwise.bor(flags, @flag_encrypted), else: flags
+    flags = if Keyword.get(opts, :priority, :normal) == :high, do: Bitwise.bor(flags, @flag_priority_high), else: flags
+    flags = if Keyword.get(opts, :requires_ack, false), do: Bitwise.bor(flags, @flag_requires_ack), else: flags
     flags
   end
   

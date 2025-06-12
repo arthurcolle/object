@@ -1,3 +1,5 @@
+ExUnit.start()
+
 defmodule Lean4IntegrationTest do
   @moduledoc """
   Integration tests for LEAN4 formal proofs

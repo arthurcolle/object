@@ -1,5 +1,5 @@
 defmodule Object.NATTraversal do
-  use Bitwise
+  # import Bitwise
   @moduledoc """
   NAT traversal mechanisms for P2P Object communication.
   
@@ -21,8 +21,8 @@ defmodule Object.NATTraversal do
   use GenServer
   require Logger
   
-  @stun_port 3478
-  @turn_port 3478
+  # @stun_port 3478
+  # @turn_port 3478
   @stun_magic_cookie 0x2112A442
   @stun_binding_request 0x0001
   @stun_binding_response 0x0101
@@ -178,7 +178,7 @@ defmodule Object.NATTraversal do
         }
         {:reply, {:ok, {nat_type, external_addr, external_port}}, new_state}
         
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -248,10 +248,10 @@ defmodule Object.NATTraversal do
   @impl true
   def handle_call({:hole_punch, local_port, remote_addr, remote_port}, _from, state) do
     case perform_hole_punch(local_port, remote_addr, remote_port) do
-      {:ok, socket} = result ->
+      {:ok, _socket} = result ->
         {:reply, result, state}
         
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -269,7 +269,7 @@ defmodule Object.NATTraversal do
             new_state = put_in(state.relay_allocations[relay_id], allocation)
             {:reply, {:ok, allocation.relayed_address}, new_state}
             
-          {:error, reason} = error ->
+          {:error, _reason} = error ->
             {:reply, error, state}
         end
     end
@@ -290,7 +290,7 @@ defmodule Object.NATTraversal do
           new_state = put_in(state.upnp_mappings[internal_port], mapping)
           {:reply, {:ok, external_port}, new_state}
           
-        {:error, reason} = error ->
+        {:error, _reason} = error ->
           {:reply, error, state}
       end
     else
@@ -418,7 +418,7 @@ defmodule Object.NATTraversal do
   end
   
   defp parse_stun_response(<<msg_type::16, length::16, @stun_magic_cookie::32,
-                            transaction_id::binary-size(12), 
+                            _transaction_id::binary-size(12), 
                             attributes::binary-size(length)>>) do
     if msg_type == @stun_binding_response do
       parse_mapped_address(attributes)
@@ -443,7 +443,7 @@ defmodule Object.NATTraversal do
   defp parse_stun_attributes(data, attrs \\ %{})
   defp parse_stun_attributes(<<>>, attrs), do: attrs
   defp parse_stun_attributes(<<type::16, length::16, value::binary-size(length),
-                              padding::binary-size(rem(4 - rem(length, 4), 4)),
+                              _padding::binary-size(rem(4 - rem(length, 4), 4)),
                               rest::binary>>, attrs) do
     parse_stun_attributes(rest, Map.put(attrs, type, value))
   end
@@ -451,14 +451,14 @@ defmodule Object.NATTraversal do
   defp decode_xor_mapped_address(<<_::8, family::8, port::16, addr::32>>) 
        when family == 0x01 do
     # IPv4
-    xor_port = port ^^^ (@stun_magic_cookie >>> 16)
-    xor_addr = addr ^^^ @stun_magic_cookie
+    xor_port = Bitwise.bxor(port, Bitwise.bsr(@stun_magic_cookie, 16))
+    xor_addr = Bitwise.bxor(addr, @stun_magic_cookie)
     
     ip = :inet.ntoa({
-      (xor_addr >>> 24) &&& 0xFF,
-      (xor_addr >>> 16) &&& 0xFF,
-      (xor_addr >>> 8) &&& 0xFF,
-      xor_addr &&& 0xFF
+      Bitwise.band(Bitwise.bsr(xor_addr, 24), 0xFF),
+      Bitwise.band(Bitwise.bsr(xor_addr, 16), 0xFF),
+      Bitwise.band(Bitwise.bsr(xor_addr, 8), 0xFF),
+      Bitwise.band(xor_addr, 0xFF)
     }) |> to_string()
     
     {:ok, ip, xor_port}
@@ -468,10 +468,10 @@ defmodule Object.NATTraversal do
        when family == 0x01 do
     # IPv4
     ip = :inet.ntoa({
-      (addr >>> 24) &&& 0xFF,
-      (addr >>> 16) &&& 0xFF,
-      (addr >>> 8) &&& 0xFF,
-      addr &&& 0xFF
+      Bitwise.band(Bitwise.bsr(addr, 24), 0xFF),
+      Bitwise.band(Bitwise.bsr(addr, 16), 0xFF),
+      Bitwise.band(Bitwise.bsr(addr, 8), 0xFF),
+      Bitwise.band(addr, 0xFF)
     }) |> to_string()
     
     {:ok, ip, port}
@@ -486,7 +486,7 @@ defmodule Object.NATTraversal do
     interfaces
     |> Enum.flat_map(fn {_name, opts} ->
       case Keyword.get(opts, :addr) do
-        {a, b, c, d} = addr when a != 127 ->
+        {a, _b, _c, _d} = addr when a != 127 ->
           # IPv4 non-loopback
           [%{
             type: :host,
@@ -529,7 +529,7 @@ defmodule Object.NATTraversal do
     |> Enum.filter(&(&1 != nil))
   end
   
-  defp gather_relay_candidates(turn_servers) do
+  defp gather_relay_candidates(_turn_servers) do
     # Simplified - would implement TURN allocation
     []
   end
@@ -546,7 +546,7 @@ defmodule Object.NATTraversal do
       local_pref = 65535 - index
       component_id = 1  # RTP component
       
-      priority = (type_pref <<< 24) + (local_pref <<< 8) + (256 - component_id)
+      priority = Bitwise.bsl(type_pref, 24) + Bitwise.bsl(local_pref, 8) + (256 - component_id)
       
       %{candidate | priority: priority}
     end)
@@ -613,11 +613,11 @@ defmodule Object.NATTraversal do
       max_p = max(g, d)
       extra = if g > d, do: 1, else: 0
       
-      (1 <<< 32) * min_p + 2 * max_p + extra
+      Bitwise.bsl(1, 32) * min_p + 2 * max_p + extra
     end, &>=/2)
   end
   
-  defp check_candidate_pair(local, remote, controlling) do
+  defp check_candidate_pair(local, remote, _controlling) do
     # Simplified connectivity check
     case {local.type, remote.type} do
       {:host, :host} ->
@@ -639,7 +639,7 @@ defmodule Object.NATTraversal do
   
   # TURN Protocol
   
-  defp allocate_turn_relay(server, port, credentials) do
+  defp allocate_turn_relay(server, port, _credentials) do
     # Simplified TURN allocation
     # Would implement full TURN protocol
     {:ok, %{
@@ -678,13 +678,13 @@ defmodule Object.NATTraversal do
     end
   end
   
-  defp parse_ssdp_response(response, gateway_addr) do
+  defp parse_ssdp_response(_response, gateway_addr) do
     # Extract location header and parse device description
     # Simplified for brevity
     {:ok, gateway_addr}
   end
   
-  defp create_upnp_mapping(internal_port, protocol, description) do
+  defp create_upnp_mapping(internal_port, _protocol, _description) do
     # Simplified UPnP port mapping
     # Would use SOAP request to add port mapping
     external_port = internal_port + 10000

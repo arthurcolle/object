@@ -52,7 +52,7 @@ defmodule Object.P2PIntegrationTest do
       
       # Test remote method calls
       info = Object.NetworkProxy.call(proxy, "get_info", [])
-      assert {:ok, %{count: 0, node: "node1"}} = info || {:error, _} = info
+      assert match?({:ok, %{count: 0, node: "node1"}}, info) || match?({:error, _}, info)
       
       # Clean up
       Process.exit(obj_pid, :normal)
@@ -181,8 +181,8 @@ defmodule Object.P2PIntegrationTest do
       
       # Discover NAT types
       nat_result1 = Object.NATTraversal.discover_nat()
-      assert {:ok, {_type, _addr, _port}} = nat_result1 || 
-             {:error, _} = nat_result1
+      assert match?({:ok, {_type, _addr, _port}}, nat_result1) || 
+             match?({:error, _}, nat_result1)
       
       # Gather ICE candidates
       {:ok, candidates} = Object.NATTraversal.gather_candidates("test_conn")

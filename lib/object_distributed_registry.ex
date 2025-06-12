@@ -1,5 +1,5 @@
 defmodule Object.DistributedRegistry do
-  use Bitwise
+  import Bitwise
   @moduledoc """
   Distributed registry for Objects using Kademlia DHT algorithm.
   
@@ -21,7 +21,7 @@ defmodule Object.DistributedRegistry do
   use GenServer
   require Logger
   
-  alias Object.{NetworkTransport, NetworkProtocol, Serialization}
+  alias Object.{NetworkTransport, NetworkProtocol}
   
   @node_id_bits 160
   @k_bucket_size 20  # Kademlia k parameter
@@ -259,7 +259,7 @@ defmodule Object.DistributedRegistry do
         handle_found_value(state, from_node, sender_id, value)
         
       _ ->
-        Logger.warn("Unknown message type: #{inspect(message)}")
+        Logger.warning("Unknown message type: #{inspect(message)}")
         {:noreply, state}
     end
   end
@@ -516,7 +516,7 @@ defmodule Object.DistributedRegistry do
           put_in(state.routing_table.buckets[bucket_index], new_bucket)
         else
           # Bucket full - ping least recently seen node
-          [oldest | rest] = Enum.reverse(bucket)
+          [oldest | _rest] = Enum.reverse(bucket)
           ping_node(state, oldest)
           state
         end
@@ -578,7 +578,7 @@ defmodule Object.DistributedRegistry do
   end
   
   defp update_best_nodes(best_nodes, new_node, target) do
-    all_nodes = [new_node | best_nodes]
+    _all_nodes = [new_node | best_nodes]
     |> Enum.uniq_by(& &1.id)
     |> Enum.sort_by(fn node -> xor_distance(node.id, target) end)
     |> Enum.take(@k_bucket_size)
@@ -586,7 +586,7 @@ defmodule Object.DistributedRegistry do
   
   # Network Communication
   
-  defp send_ping(state, node, sender_id) do
+  defp send_ping(_state, node, sender_id) do
     message = NetworkProtocol.create_cast(
       "dht_node",
       "ping",
@@ -601,7 +601,7 @@ defmodule Object.DistributedRegistry do
     end
   end
   
-  defp send_pong(state, node, sender_id) do
+  defp send_pong(_state, node, sender_id) do
     message = NetworkProtocol.create_cast(
       "dht_node",
       "pong",
@@ -795,7 +795,7 @@ defmodule Object.DistributedRegistry do
     bit_index = rem(bucket_index, 8)
     
     updated_list = List.update_at(distance_list, byte_index, fn byte ->
-      byte ||| (1 <<< (7 - bit_index))
+      Bitwise.bor(byte, Bitwise.bsl(1, 7 - bit_index))
     end)
     
     distance_binary = :binary.list_to_bin(updated_list)

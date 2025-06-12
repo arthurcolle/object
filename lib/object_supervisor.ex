@@ -276,7 +276,7 @@ defmodule Object.Supervisor do
     }
   end
   
-  defp resource_monitor_spec(opts) do
+  defp resource_monitor_spec(_opts) do
     # Resource monitoring disabled - Object.ResourceMonitor not available
     if Keyword.get(opts, :enable_resource_monitoring, false) do
       # Return a minimal placeholder
@@ -291,7 +291,7 @@ defmodule Object.Supervisor do
     end
   end
   
-  defp health_monitor_spec(opts) do
+  defp health_monitor_spec(_opts) do
     # Health monitoring disabled - Object.HealthMonitor not available
     if Keyword.get(opts, :enable_health_monitoring, false) do
       # Return a minimal placeholder

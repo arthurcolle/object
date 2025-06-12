@@ -233,7 +233,7 @@ defmodule OORL.MCGS do
       end
     end)
     
-    best_result || %{best_path: [start_node], path_cost: Float.infinity()}
+    best_result || %{best_path: [start_node], path_cost: :infinity}
   end
 
   defp single_search_iteration(state, goal_nodes, mcgs_config) do

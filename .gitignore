@@ -21,3 +21,18 @@ object-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# OS files
+.DS_Store
+
+# Generated files
+/pdf_images/
+/aaos_full_analysis/
+/output.log
+/process_aaos_full.py
+/AAOS.pdf
+
+# Benchmark results
+/benchmarks/results/
+/benchmarks/baseline_metrics.json
+/benchmarks/archives/

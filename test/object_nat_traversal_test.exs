@@ -1,6 +1,7 @@
 defmodule Object.NATTraversalTest do
   use ExUnit.Case, async: false
   alias Object.NATTraversal
+  import Bitwise
 
   setup do
     {:ok, _pid} = NATTraversal.start_link(
@@ -234,8 +235,8 @@ defmodule Object.NATTraversalTest do
     addr_type = 0x0020
     addr_length = 8
     family = 0x01  # IPv4
-    port = 12345 ^^^ (0x2112A442 >>> 16)
-    addr = (a <<< 24 ||| b <<< 16 ||| c <<< 8 ||| d) ^^^ 0x2112A442
+    port = Bitwise.bxor(12345, Bitwise.bsr(0x2112A442, 16))
+    addr = Bitwise.bxor(Bitwise.bor(Bitwise.bor(Bitwise.bor(Bitwise.bsl(a, 24), Bitwise.bsl(b, 16)), Bitwise.bsl(c, 8)), d), 0x2112A442)
     
     attr = <<addr_type::16, addr_length::16, 0::8, family::8, 
              port::16, addr::32>>

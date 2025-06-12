@@ -21,9 +21,9 @@ defmodule Object.P2PBootstrap do
   require Logger
   
   @mdns_service "_object-p2p._tcp"
-  @mdns_domain "local"
+  # @mdns_domain "local"
   @dns_seed_prefix "seed"
-  @bootstrap_retry_interval 30_000
+  # @bootstrap_retry_interval 30_000
   @peer_exchange_interval 60_000
   @max_peers 100
   @min_peers 20
@@ -277,7 +277,7 @@ defmodule Object.P2PBootstrap do
   end
   
   @impl true
-  def handle_info({:dht_peer, info_hash, peers}, state) do
+  def handle_info({:dht_peer, _info_hash, peers}, state) do
     # Handle peers discovered via BitTorrent DHT
     new_state = Enum.reduce(peers, state, fn {addr, port}, acc ->
       peer_info = %{
@@ -420,7 +420,7 @@ defmodule Object.P2PBootstrap do
     {:ok, make_ref()}
   end
   
-  defp announce_mdns(node_id, port) do
+  defp announce_mdns(node_id, _port) do
     # Announce service via mDNS
     service_name = "object-#{Base.encode16(node_id, case: :lower)}"
     
@@ -464,7 +464,7 @@ defmodule Object.P2PBootstrap do
     Process.send_after(self(), {:dht_peer, info_hash, []}, 5000)
   end
   
-  defp announce_dht(node_id, port) do
+  defp announce_dht(node_id, _port) do
     info_hash = :crypto.hash(:sha, node_id)
     
     # Would announce to BitTorrent DHT
@@ -499,7 +499,7 @@ defmodule Object.P2PBootstrap do
     end)
   end
   
-  defp send_peer_exchange_request(peer) do
+  defp send_peer_exchange_request(_peer) do
     # Would implement actual peer exchange protocol
     {:ok, []}
   end

@@ -394,7 +394,7 @@ defmodule Object.ByzantineFaultTolerance do
     
     # Abort timed out rounds
     Enum.each(timed_out, fn {id, round} ->
-      Logger.warn("Consensus round #{id} timed out")
+      Logger.warning("Consensus round #{id} timed out")
       
       # Record failure in audit log
       audit_consensus_failure(state, round, :timeout)
@@ -686,14 +686,14 @@ defmodule Object.ByzantineFaultTolerance do
     :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
   end
   
-  defp send_consensus_message(participant, message, _state) do
+  defp send_consensus_message(participant, _message, _state) do
     # Would use Object.NetworkProxy to send message
     Task.start(fn ->
       Logger.debug("Sending consensus message to #{Base.encode16(participant)}")
     end)
   end
   
-  defp send_challenge(node_id, challenge_id, challenge) do
+  defp send_challenge(node_id, challenge_id, _challenge) do
     Task.start(fn ->
       Logger.debug("Sending challenge #{challenge_id} to #{Base.encode16(node_id)}")
     end)
@@ -709,7 +709,7 @@ defmodule Object.ByzantineFaultTolerance do
   end
   
   defp audit_consensus_failure(_state, round, reason) do
-    Logger.warn("Consensus round #{round.id} failed: #{reason}")
+    Logger.warning("Consensus round #{round.id} failed: #{reason}")
   end
   
   defp schedule_reputation_decay do

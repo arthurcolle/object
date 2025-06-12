@@ -434,10 +434,10 @@ defmodule Object do
       # Execute method directly
       result = try do
         {:ok, execute_method_internal(object, method, args)}
+      rescue
+        error -> {:error, error, :retry}
       catch
         {:error, reason} -> {:error, reason, :retry}
-        error -> {:error, error, :retry}
-      rescue
         error -> {:error, error, :retry}
       end
       

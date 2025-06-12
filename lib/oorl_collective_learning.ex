@@ -232,7 +232,8 @@ defmodule OORL.CollectiveLearning do
   ## Returns
   Updated collective with modified membership
   """
-  def manage_membership(collective, :join, object_id, credentials \\ %{}) do
+  def manage_membership(collective, action, object_id, credentials \\ %{})
+  def manage_membership(collective, :join, object_id, credentials) do
     if validate_join_credentials(credentials, collective.trust_network) do
       updated_members = MapSet.put(collective.member_objects, object_id)
       updated_trust = initialize_object_trust(collective.trust_network, object_id)
