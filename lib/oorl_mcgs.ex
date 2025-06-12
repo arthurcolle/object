@@ -354,11 +354,11 @@ defmodule OORL.MCGS do
     end)
   end
 
-  defp update_features_with_contrastive_loss(node_features, positive_pairs, negative_pairs, temperature) do
+  defp update_features_with_contrastive_loss(node_features, positive_pairs, negative_pairs, _temperature) do
     # Simple contrastive learning update
-    learning_rate = 0.01
+    _learning_rate = 0.01
     
-    Enum.reduce(positive_pairs ++ negative_pairs, node_features, fn {f1, f2}, acc ->
+    Enum.reduce(positive_pairs ++ negative_pairs, node_features, fn {_f1, _f2}, acc ->
       # Placeholder for actual contrastive learning update
       # In practice, this would involve gradient computation and feature updates
       acc
@@ -368,7 +368,7 @@ defmodule OORL.MCGS do
   # Utility functions
 
   defp get_node_neighbors(node_id, graph) do
-    Enum.filter(graph.edges, fn {source, target, _weight} ->
+    Enum.filter(graph.edges, fn {source, _target, _weight} ->
       source == node_id
     end)
     |> Enum.map(fn {_source, target, _weight} -> target end)

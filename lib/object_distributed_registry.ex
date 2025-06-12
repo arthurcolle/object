@@ -1,5 +1,4 @@
 defmodule Object.DistributedRegistry do
-  import Bitwise
   @moduledoc """
   Distributed registry for Objects using Kademlia DHT algorithm.
   

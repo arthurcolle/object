@@ -258,7 +258,7 @@ defmodule Object.OpenAIClient do
     """
   end
   
-  defp build_user_prompt(signature, inputs) do
+  defp build_user_prompt(_signature, inputs) do
     input_text = Enum.map(inputs, fn {key, value} ->
       "#{key}: #{value}"
     end) |> Enum.join("\n\n")
@@ -321,7 +321,7 @@ defmodule Object.OpenAIClient do
     {:noreply, state}
   end
   
-  defp stream_request(messages, opts, state) do
+  defp stream_request(_messages, _opts, _state) do
     # Implementation for SSE streaming
     # This would use a streaming HTTP client to handle Server-Sent Events
     {:error, "Streaming not yet implemented"}
