@@ -50,7 +50,10 @@ theorem schema_evolution_stability : ∀ version : ℕ, ∃ stable : ℕ, stable
 
 -- Theorem 8: Distributed Consensus Achievement
 theorem distributed_consensus_achievement : ∀ nodes : ℕ, nodes ≥ 4 → ∃ consensus_time : ℕ, consensus_time < nodes := 
-  fun nodes h => ⟨nodes - 1, Nat.sub_one_lt_iff.2 (Nat.zero_lt_of_ne_zero (ne_of_gt (show nodes > 0 from Nat.lt_of_succ_le h)))⟩
+  fun nodes h => ⟨nodes - 1, by
+    apply Nat.sub_lt
+    · exact Nat.zero_lt_of_ne_zero (ne_of_gt (show nodes > 0 from Nat.lt_of_succ_le h))
+    · exact Nat.zero_lt_one⟩
 
 -- Theorem 9: Meta Learning Acceleration
 theorem meta_learning_acceleration : ∀ learning_rate : ℕ, ∃ accelerated : ℕ, accelerated > learning_rate := 

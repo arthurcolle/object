@@ -8,11 +8,10 @@ This file contains machine-verified convergence guarantees, sample complexity bo
 and optimality conditions for the OORL framework.
 -/
 
-import Mathlib.Analysis.Calculus.Mean
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 import Mathlib.Analysis.Normed.Field.Basic
-import Mathlib.Probability.Martingale.Basic
-import Mathlib.MeasureTheory.Integral.Lebesgue
-import Mathlib.Topology.Metric.Basic
 import Mathlib.Data.Real.Basic
 import AAOSProofs.Basic
 

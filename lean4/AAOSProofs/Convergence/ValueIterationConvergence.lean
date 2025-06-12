@@ -5,9 +5,9 @@
   methods in the OORL framework.
 -/
 
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.Topology.MetricSpace.Contracting
-import Mathlib.Data.Real.NNReal
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOSProofs.Convergence.ValueIteration
 

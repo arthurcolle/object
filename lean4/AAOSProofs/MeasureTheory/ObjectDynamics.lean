@@ -4,10 +4,9 @@
   This module formalizes the stochastic dynamics of objects.
 -/
 
-import Mathlib.MeasureTheory.MeasurableSpace.Basic
-import Mathlib.MeasureTheory.Measure.MeasureSpaceDef
-import Mathlib.Topology.MetricSpace.Basic
-import Mathlib.Topology.Instances.Real
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOSProofs.MeasureTheory
 

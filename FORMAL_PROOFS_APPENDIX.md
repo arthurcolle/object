@@ -1,5 +1,7 @@
 # 📐 AAOS Formal Proofs Appendix
 
+> **Related Documentation**: [README](README.md) | [Mathematical Foundations](MATHEMATICS_OF_AUTONOMOUS_AGENCY.md) | [Advanced Mathematics](ADVANCED_MATHEMATICS_APPENDIX.md) | [System Report](AAOS_SYSTEM_REPORT.md) | [Architecture](ARCHITECTURE_OF_AUTONOMOUS_AGENCY.md)
+
 **Mathematical Rigor for the Autonomous AI Object System**
 
 *A Complete Mathematical Foundation with Machine-Verifiable Proofs*

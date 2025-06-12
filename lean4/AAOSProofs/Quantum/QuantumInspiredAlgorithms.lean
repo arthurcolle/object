@@ -3,13 +3,9 @@ AAOS Quantum-Inspired Algorithms
 Formal verification of quantum-inspired optimization and learning algorithms
 -/
 
-import Mathlib.Data.Complex.Basic
 import Mathlib.Data.Real.Basic
-import Mathlib.LinearAlgebra.Basic
-import Mathlib.LinearAlgebra.Matrix.Basic
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Analysis.Normed.Group.Basic
-import Mathlib.Data.Set.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOS.Quantum
 

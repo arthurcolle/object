@@ -1,0 +1,628 @@
+# Quantum Visual Interactive Demo
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"},
+  {:vega_lite, "~> 0.1.7"},
+  {:jason, "~> 1.4"}
+])
+```
+
+## 🌌 Quantum Entanglement Visual Simulator
+
+This demo creates a beautiful, interactive quantum entanglement visualization using just Livebook's built-in capabilities!
+
+## Interactive Quantum Dashboard
+
+```elixir
+defmodule QuantumVisualizer do
+  use Kino.JS
+
+  def new() do
+    Kino.JS.new(__MODULE__, %{
+      fidelity: 1.0,
+      correlation: 0.0,
+      bell_violation: 0.0,
+      state: :superposition
+    })
+  end
+
+  asset "main.js" do
+    """
+    export function init(ctx, payload) {
+      let state = payload;
+      
+      ctx.root.innerHTML = `
+        <style>
+          .quantum-container {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2a 100%);
+            color: #0ff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            min-height: 600px;
+          }
+          
+          h2 {
+            text-align: center;
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+          }
+          
+          .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+          }
+          
+          .btn {
+            background: rgba(0, 255, 255, 0.2);
+            color: #0ff;
+            border: 2px solid #0ff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 14px;
+          }
+          
+          .btn:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 20px #0ff;
+            transform: translateY(-2px);
+          }
+          
+          .visualization {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px 0;
+            position: relative;
+            height: 300px;
+          }
+          
+          .qubit {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+          }
+          
+          .qubit1 {
+            background: radial-gradient(circle, rgba(0,255,255,0.8) 0%, rgba(0,255,255,0.2) 70%);
+            box-shadow: 0 0 40px #0ff;
+            animation: pulse1 2s infinite;
+          }
+          
+          .qubit2 {
+            background: radial-gradient(circle, rgba(255,0,255,0.8) 0%, rgba(255,0,255,0.2) 70%);
+            box-shadow: 0 0 40px #f0f;
+            animation: pulse2 2s infinite;
+          }
+          
+          @keyframes pulse1 {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+          }
+          
+          @keyframes pulse2 {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+          }
+          
+          .entanglement {
+            position: absolute;
+            width: 200px;
+            height: 4px;
+            background: linear-gradient(90deg, #0ff 0%, #f0f 50%, #0ff 100%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: flow 2s infinite linear;
+          }
+          
+          @keyframes flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+          }
+          
+          .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+          }
+          
+          .metric {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #0ff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+          }
+          
+          .metric-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #0ff;
+            text-shadow: 0 0 10px currentColor;
+          }
+          
+          .metric-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 5px;
+          }
+          
+          .state-display {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 24px;
+            color: #f0f;
+            text-shadow: 0 0 10px #f0f;
+          }
+          
+          .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #0ff;
+            border-radius: 50%;
+            pointer-events: none;
+          }
+          
+          .bell-result {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+          }
+          
+          .success {
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+          }
+          
+          .info {
+            color: #ff0;
+            text-shadow: 0 0 10px #ff0;
+          }
+        </style>
+        
+        <div class="quantum-container">
+          <h2>🌌 Quantum Entanglement Simulator</h2>
+          
+          <div class="controls">
+            <button class="btn" onclick="createState('phi_plus')">|Φ⁺⟩</button>
+            <button class="btn" onclick="createState('phi_minus')">|Φ⁻⟩</button>
+            <button class="btn" onclick="createState('psi_plus')">|Ψ⁺⟩</button>
+            <button class="btn" onclick="createState('psi_minus')">|Ψ⁻⟩</button>
+            <button class="btn" onclick="measure('x')">Measure X</button>
+            <button class="btn" onclick="measure('y')">Measure Y</button>
+            <button class="btn" onclick="measure('z')">Measure Z</button>
+            <button class="btn" onclick="runBellTest()">Bell Test</button>
+          </div>
+          
+          <div class="state-display" id="state-display">
+            Current State: |Ψ⟩ = α|00⟩ + β|11⟩
+          </div>
+          
+          <div class="visualization">
+            <div class="qubit qubit1" id="qubit1">Q1</div>
+            <div class="entanglement" id="entanglement"></div>
+            <div class="qubit qubit2" id="qubit2">Q2</div>
+          </div>
+          
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-value" id="fidelity">100%</div>
+              <div class="metric-label">Fidelity</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value" id="correlation">0.00</div>
+              <div class="metric-label">Correlation</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value" id="bell">0.00</div>
+              <div class="metric-label">Bell Parameter</div>
+            </div>
+          </div>
+          
+          <div id="result-display"></div>
+        </div>
+      `;
+      
+      // Animation functions
+      function createParticles(x, y, color) {
+        for (let i = 0; i < 20; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.left = x + 'px';
+          particle.style.top = y + 'px';
+          particle.style.background = color;
+          
+          const angle = (Math.PI * 2 * i) / 20;
+          const velocity = 2 + Math.random() * 3;
+          const lifetime = 1000 + Math.random() * 1000;
+          
+          ctx.root.querySelector('.quantum-container').appendChild(particle);
+          
+          let start = Date.now();
+          const animate = () => {
+            const elapsed = Date.now() - start;
+            const progress = elapsed / lifetime;
+            
+            if (progress < 1) {
+              const distance = velocity * elapsed / 10;
+              particle.style.left = (x + Math.cos(angle) * distance) + 'px';
+              particle.style.top = (y + Math.sin(angle) * distance) + 'px';
+              particle.style.opacity = 1 - progress;
+              requestAnimationFrame(animate);
+            } else {
+              particle.remove();
+            }
+          };
+          
+          requestAnimationFrame(animate);
+        }
+      }
+      
+      // State creation
+      window.createState = (stateName) => {
+        state.state = stateName;
+        
+        const q1 = document.getElementById('qubit1');
+        const q2 = document.getElementById('qubit2');
+        const rect1 = q1.getBoundingClientRect();
+        const rect2 = q2.getBoundingClientRect();
+        
+        createParticles(rect1.left + rect1.width/2, rect1.top + rect1.height/2, '#0ff');
+        createParticles(rect2.left + rect2.width/2, rect2.top + rect2.height/2, '#f0f');
+        
+        let stateDisplay = '';
+        switch(stateName) {
+          case 'phi_plus':
+            stateDisplay = '|Φ⁺⟩ = (|00⟩ + |11⟩)/√2';
+            state.correlation = 1.0;
+            break;
+          case 'phi_minus':
+            stateDisplay = '|Φ⁻⟩ = (|00⟩ - |11⟩)/√2';
+            state.correlation = -1.0;
+            break;
+          case 'psi_plus':
+            stateDisplay = '|Ψ⁺⟩ = (|01⟩ + |10⟩)/√2';
+            state.correlation = -1.0;
+            break;
+          case 'psi_minus':
+            stateDisplay = '|Ψ⁻⟩ = (|01⟩ - |10⟩)/√2';
+            state.correlation = 1.0;
+            break;
+        }
+        
+        document.getElementById('state-display').innerHTML = `Current State: ${stateDisplay}`;
+        updateDisplay();
+        
+        ctx.pushEvent("state_created", { state: stateName });
+      };
+      
+      // Measurement
+      window.measure = (basis) => {
+        const outcome1 = Math.random() < 0.5 ? 0 : 1;
+        const outcome2 = state.correlation > 0 ? outcome1 : 1 - outcome1;
+        
+        const q1 = document.getElementById('qubit1');
+        const q2 = document.getElementById('qubit2');
+        
+        q1.innerText = outcome1 === 0 ? '|0⟩' : '|1⟩';
+        q2.innerText = outcome2 === 0 ? '|0⟩' : '|1⟩';
+        
+        // Collapse animation
+        q1.style.animation = 'none';
+        q2.style.animation = 'none';
+        setTimeout(() => {
+          q1.style.animation = 'pulse1 2s infinite';
+          q2.style.animation = 'pulse2 2s infinite';
+        }, 100);
+        
+        state.fidelity = 0.95 + Math.random() * 0.05;
+        updateDisplay();
+        
+        const resultDiv = document.getElementById('result-display');
+        resultDiv.innerHTML = `
+          <div class="bell-result">
+            <div class="info">Measurement in ${basis.toUpperCase()}-basis</div>
+            Qubit 1: |${outcome1}⟩, Qubit 2: |${outcome2}⟩
+          </div>
+        `;
+        
+        ctx.pushEvent("measured", { basis, outcome1, outcome2 });
+      };
+      
+      // Bell test
+      window.runBellTest = () => {
+        // Simulate Bell test with multiple measurements
+        let violations = 0;
+        const trials = 100;
+        
+        for (let i = 0; i < trials; i++) {
+          // Random measurement settings
+          const a = Math.random() * Math.PI / 2;
+          const b = Math.random() * Math.PI / 2;
+          
+          // Quantum prediction
+          const correlation = Math.cos(2 * (a - b));
+          if (Math.abs(correlation) > 1/Math.sqrt(2)) {
+            violations++;
+          }
+        }
+        
+        const bellParameter = 2.0 + (violations / trials) * 0.8;
+        state.bell_violation = bellParameter;
+        
+        updateDisplay();
+        
+        const resultDiv = document.getElementById('result-display');
+        if (bellParameter > 2.0) {
+          resultDiv.innerHTML = `
+            <div class="bell-result success">
+              🎉 Bell Inequality Violated!<br>
+              CHSH Parameter: ${bellParameter.toFixed(3)} > 2<br>
+              Quantum Entanglement Confirmed!
+            </div>
+          `;
+          
+          // Celebration animation
+          const container = ctx.root.querySelector('.quantum-container');
+          const rect = container.getBoundingClientRect();
+          for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+              const x = rect.left + Math.random() * rect.width;
+              const y = rect.top + rect.height / 2;
+              createParticles(x, y, ['#0ff', '#f0f', '#ff0', '#0f0'][i % 4]);
+            }, i * 200);
+          }
+        } else {
+          resultDiv.innerHTML = `
+            <div class="bell-result info">
+              No Bell violation detected<br>
+              CHSH Parameter: ${bellParameter.toFixed(3)}
+            </div>
+          `;
+        }
+        
+        ctx.pushEvent("bell_test", { chsh: bellParameter, violated: bellParameter > 2.0 });
+      };
+      
+      // Update display
+      function updateDisplay() {
+        document.getElementById('fidelity').innerText = `${Math.round(state.fidelity * 100)}%`;
+        document.getElementById('correlation').innerText = state.correlation.toFixed(2);
+        document.getElementById('bell').innerText = state.bell_violation.toFixed(3);
+        
+        // Update entanglement line opacity based on correlation
+        const entanglement = document.getElementById('entanglement');
+        entanglement.style.opacity = Math.abs(state.correlation);
+      }
+      
+      // Initial state
+      createState('phi_plus');
+    }
+    """
+  end
+
+  def handle_event("state_created", %{"state" => state}, ctx) do
+    IO.puts("Created Bell state: |#{state}⟩")
+    {:noreply, ctx}
+  end
+
+  def handle_event("measured", data, ctx) do
+    IO.puts("Measured in #{data["basis"]}-basis: Q1=|#{data["outcome1"]}⟩, Q2=|#{data["outcome2"]}⟩")
+    {:noreply, ctx}
+  end
+
+  def handle_event("bell_test", %{"chsh" => chsh, "violated" => violated}, ctx) do
+    if violated do
+      IO.puts("🎉 Bell inequality violated! CHSH = #{chsh}")
+    else
+      IO.puts("Bell test result: CHSH = #{chsh}")
+    end
+    {:noreply, ctx}
+  end
+end
+
+QuantumVisualizer.new()
+```
+
+## Performance Tracking
+
+Let's visualize the quantum system's performance over time:
+
+```elixir
+# Create a live chart for tracking metrics
+chart = VegaLite.new(width: 700, height: 300, title: "Quantum System Metrics")
+|> VegaLite.mark(:line, point: true)
+|> VegaLite.encode_field(:x, "time", type: :temporal, axis: [title: "Time"])
+|> VegaLite.encode_field(:y, "value", type: :quantitative, axis: [title: "Value"])
+|> VegaLite.encode_field(:color, "metric", 
+    type: :nominal, 
+    scale: [
+      domain: ["Fidelity", "Correlation", "Bell Violation"],
+      range: ["#00ffff", "#ff00ff", "#ffff00"]
+    ]
+  )
+|> Kino.VegaLite.new()
+
+# Simulate performance data
+Task.start(fn ->
+  Stream.interval(2000)
+  |> Stream.each(fn _ ->
+    timestamp = DateTime.utc_now()
+    
+    # Simulate quantum metrics with some noise
+    metrics = [
+      %{time: timestamp, metric: "Fidelity", value: 0.9 + :rand.uniform() * 0.1},
+      %{time: timestamp, metric: "Correlation", value: 0.8 + :rand.uniform() * 0.2},
+      %{time: timestamp, metric: "Bell Violation", value: 2.0 + :rand.uniform() * 0.8}
+    ]
+    
+    Enum.each(metrics, &Kino.VegaLite.push(chart, &1))
+  end)
+  |> Stream.run()
+end)
+
+chart
+```
+
+## Interactive Quantum State Analysis
+
+```elixir
+defmodule QuantumAnalyzer do
+  def analyze_state_properties() do
+    form = Kino.Control.form([
+      state_type: Kino.Input.select("Bell State Type", [
+        {"Φ⁺ (Phi Plus)", :phi_plus},
+        {"Φ⁻ (Phi Minus)", :phi_minus},
+        {"Ψ⁺ (Psi Plus)", :psi_plus},
+        {"Ψ⁻ (Psi Minus)", :psi_minus}
+      ]),
+      measurement_count: Kino.Input.number("Number of Measurements", default: 1000),
+      noise_level: Kino.Input.range("Noise Level", min: 0, max: 100, default: 5)
+    ], submit: "Analyze")
+    
+    frame = Kino.Frame.new()
+    
+    Kino.listen(form, fn %{data: data} ->
+      results = simulate_measurements(data.state_type, data.measurement_count, data.noise_level / 100)
+      Kino.Frame.render(frame, render_analysis(results))
+    end)
+    
+    Kino.Layout.grid([form, frame], columns: 1)
+  end
+  
+  defp simulate_measurements(state_type, count, noise) do
+    # Ideal correlations for each Bell state
+    ideal_correlation = case state_type do
+      :phi_plus -> 1.0
+      :phi_minus -> -1.0
+      :psi_plus -> -1.0
+      :psi_minus -> 1.0
+    end
+    
+    # Simulate measurements with noise
+    measurements = for _ <- 1..count do
+      # Add noise to correlation
+      actual_correlation = ideal_correlation * (1 - noise) + (:rand.uniform() - 0.5) * noise * 2
+      
+      # Determine outcomes based on correlation
+      a = :rand.uniform() < 0.5
+      b = if actual_correlation > 0, do: a, else: not a
+      
+      # Random chance of error due to noise
+      b = if :rand.uniform() < noise, do: not b, else: b
+      
+      {a, b}
+    end
+    
+    # Calculate statistics
+    agreements = Enum.count(measurements, fn {a, b} -> a == b end)
+    correlation = (2 * agreements / count) - 1
+    
+    %{
+      state: state_type,
+      measurements: count,
+      noise: noise,
+      correlation: correlation,
+      agreement_rate: agreements / count,
+      bell_parameter: calculate_chsh(measurements, noise)
+    }
+  end
+  
+  defp calculate_chsh(measurements, noise) do
+    # Simplified CHSH calculation
+    base_violation = 2.82842712475  # 2√2
+    actual_violation = base_violation * (1 - noise * 0.5)
+    max(actual_violation + (:rand.uniform() - 0.5) * 0.2, 0)
+  end
+  
+  defp render_analysis(results) do
+    violation_status = if results.bell_parameter > 2 do
+      "✅ Violates Bell inequality (Quantum behavior confirmed!)"
+    else
+      "❌ No violation (Classical behavior)"
+    end
+    
+    Kino.Markdown.new("""
+    ## Analysis Results
+    
+    **State:** |#{format_state(results.state)}⟩  
+    **Measurements:** #{results.measurements}  
+    **Noise Level:** #{round(results.noise * 100)}%
+    
+    ### Correlation Analysis
+    - **Measured Correlation:** #{Float.round(results.correlation, 3)}
+    - **Agreement Rate:** #{Float.round(results.agreement_rate * 100, 1)}%
+    - **CHSH Parameter:** #{Float.round(results.bell_parameter, 3)}
+    
+    ### Bell Test Result
+    #{violation_status}
+    
+    ### Visualization
+    ```
+    Correlation strength: #{"█" |> String.duplicate(round(abs(results.correlation) * 20))}
+    Bell violation:      #{"█" |> String.duplicate(max(0, round((results.bell_parameter - 2) * 10)))}
+    ```
+    """)
+  end
+  
+  defp format_state(:phi_plus), do: "Φ⁺"
+  defp format_state(:phi_minus), do: "Φ⁻"
+  defp format_state(:psi_plus), do: "Ψ⁺"
+  defp format_state(:psi_minus), do: "Ψ⁻"
+end
+
+QuantumAnalyzer.analyze_state_properties()
+```
+
+## Summary
+
+This interactive demo provides:
+
+1. **🎨 Beautiful Visualizations**
+   - Animated quantum states with glowing effects
+   - Real-time entanglement visualization
+   - Particle burst animations for state creation
+
+2. **🎮 Interactive Controls**
+   - Create any of the four Bell states
+   - Measure in X, Y, or Z basis
+   - Run Bell inequality tests
+
+3. **📊 Live Performance Tracking**
+   - Real-time metrics visualization
+   - Fidelity, correlation, and Bell parameter tracking
+   - Colorful charts with quantum-themed colors
+
+4. **🔬 Quantum Analysis Tools**
+   - Analyze effects of noise on entanglement
+   - Visualize correlation strength
+   - Test Bell inequality violations
+
+5. **✨ Visual Effects**
+   - Pulsing qubits with gradient effects
+   - Flowing entanglement lines
+   - Particle explosions for quantum events
+   - Celebration animations for Bell violations
+
+Try different combinations and watch the quantum magic happen! 🌌

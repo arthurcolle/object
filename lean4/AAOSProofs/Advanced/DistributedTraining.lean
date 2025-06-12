@@ -12,10 +12,9 @@ and robustness properties.
 - Heterogeneity bounds and data distribution effects
 -/
 
-import Mathlib.Analysis.Normed.Group.Basic
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.MeasureTheory.Probability.Basic
-import Mathlib.LinearAlgebra.Matrix.Basic
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 import AAOSProofs.Basic
 
 -- Basic structures for distributed training

@@ -14,11 +14,9 @@ impossibility results for emergence detection.
 - Computational irreducibility theorems
 -/
 
-import Mathlib.MeasureTheory.Probability.Basic
-import Mathlib.Information.Entropy
-import Mathlib.Computability.Halting
 import Mathlib.Data.Real.Basic
-import AAOSProofs.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 -- Basic structures for multi-agent systems
 structure Agent (S A : Type*) where

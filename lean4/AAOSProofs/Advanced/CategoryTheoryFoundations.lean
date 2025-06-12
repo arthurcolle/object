@@ -8,15 +8,9 @@ This file contains machine-verified category theory structures, functors,
 natural transformations, and topos-theoretic constructions.
 -/
 
-import Mathlib.CategoryTheory.Category.Basic
-import Mathlib.CategoryTheory.Functor.Basic
-import Mathlib.CategoryTheory.NaturalTransformation
-import Mathlib.CategoryTheory.Monad.Basic
-import Mathlib.CategoryTheory.Limits.Shapes.Products
-import Mathlib.CategoryTheory.Limits.Shapes.Equalizers
-import Mathlib.CategoryTheory.Topos.Basic
-import Mathlib.CategoryTheory.Kleisli
-import Mathlib.CategoryTheory.Yoneda
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 import AAOSProofs.Basic
 
 -- Category Theory Foundations for AAOS

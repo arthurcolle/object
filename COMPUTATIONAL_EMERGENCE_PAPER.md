@@ -1,5 +1,7 @@
 # Computational Emergence in Autonomous Agency Operating Systems: A Mathematical Framework for Self-Organizing Distributed Intelligence
 
+> **Related Documentation**: [README](README.md) | [Mathematical Foundations](MATHEMATICS_OF_AUTONOMOUS_AGENCY.md) | [System Architecture](ARCHITECTURE_OF_AUTONOMOUS_AGENCY.md) | [System Dynamics](DYNAMICS_OF_AUTONOMOUS_AGENCY.md) | [Advanced Mathematics](ADVANCED_MATHEMATICS_APPENDIX.md)
+
 **Authors:** Advanced Systems Research Group  
 **Affiliation:** Autonomous Agency Research Institute  
 **Date:** December 2025  

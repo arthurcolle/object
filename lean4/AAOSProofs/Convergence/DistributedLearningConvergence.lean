@@ -5,9 +5,9 @@
   learning algorithms including DiLoCo and DisTrO approaches.
 -/
 
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.LinearAlgebra.Matrix.Trace
-import Mathlib.Data.Real.NNReal
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOSProofs.Convergence.DistributedLearning
 

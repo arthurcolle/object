@@ -5,10 +5,9 @@
   emergent patterns in multi-agent systems.
 -/
 
-import Mathlib.AlgebraicTopology.SimplicialSet
-import Mathlib.AlgebraicTopology.Homology
-import Mathlib.Topology.MetricSpace.Basic
-import Mathlib.CategoryTheory.Limits.Filtered
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOS.Topology
 

@@ -5,9 +5,9 @@
   game-theoretic learning, and emergent coordination.
 -/
 
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.GameTheory.Basic
-import Mathlib.Topology.MetricSpace.Basic
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOSProofs.Convergence.MultiAgent
 

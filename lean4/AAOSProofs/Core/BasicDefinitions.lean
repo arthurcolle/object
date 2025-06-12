@@ -4,7 +4,7 @@
 namespace AAOS
 
 -- Basic type definitions
-def ObjectId : Type := String
+@[reducible] def ObjectId : Type := String
 
 -- Object state representation
 structure ObjectState where

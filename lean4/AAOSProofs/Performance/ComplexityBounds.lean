@@ -3,12 +3,9 @@ AAOS Performance and Complexity Bounds
 Formal verification of computational complexity and performance guarantees
 -/
 
-import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Real.Basic
-import Mathlib.Analysis.Asymptotics.BigOperators
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.Data.Set.Finite
-import Mathlib.Logic.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOS.Performance
 

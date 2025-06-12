@@ -1,0 +1,640 @@
+# Quantum Entanglement Interactive Demo
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"},
+  {:vega_lite, "~> 0.1.7"},
+  {:jason, "~> 1.4"}
+])
+
+# Since the object app modules are already compiled, we can add the path
+Code.prepend_path("../_build/dev/lib/object/ebin")
+```
+
+## Quantum Entanglement Visualization
+
+Welcome to the **Quantum Entanglement Interactive Demo**! This Livebook creates an interactive quantum simulation environment where you can:
+
+* Create and manipulate entangled quantum states
+* Visualize quantum correlations in real-time
+* Perform Bell inequality tests
+* See adaptive learning in action
+
+## Initialize Quantum Systems
+
+Let's start by initializing our quantum correlation engine and self-evaluation system:
+
+```elixir
+alias Object.QuantumCorrelationEngine
+alias Object.QuantumSelfEvaluation
+alias Object.QuantumEntanglement
+alias Object.QuantumMeasurement
+
+# Start the quantum systems
+{:ok, correlation_engine} = QuantumCorrelationEngine.start_link()
+{:ok, evaluation_system} = QuantumSelfEvaluation.start_link()
+
+IO.puts("✨ Quantum systems initialized!")
+```
+
+## Create Interactive Quantum State Controls
+
+```elixir
+defmodule QuantumDashboard do
+  use Kino.JS
+
+  def new() do
+    Kino.JS.new(__MODULE__, %{})
+  end
+
+  asset "main.js" do
+    """
+    export function init(ctx, payload) {
+      ctx.root.innerHTML = `
+        <style>
+          .quantum-dashboard {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #0ff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+          }
+          
+          .control-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+          }
+          
+          .control-group {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #0ff;
+          }
+          
+          .button {
+            background: #0ff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 5px;
+          }
+          
+          .button:hover {
+            background: #fff;
+            box-shadow: 0 0 10px #0ff;
+          }
+          
+          .quantum-state {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border: 1px solid #0ff;
+          }
+          
+          .bloch-sphere {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            margin: 10px auto;
+          }
+          
+          .qubit-vector {
+            position: absolute;
+            width: 2px;
+            background: #0ff;
+            transform-origin: bottom;
+            bottom: 50%;
+            left: 50%;
+            height: 80px;
+            animation: rotate 2s infinite linear;
+          }
+          
+          @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          
+          .correlation-display {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+          }
+          
+          .entanglement-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #ff00ff, #00ffff);
+            animation: pulse 1s infinite;
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+          }
+          
+          .metric {
+            text-align: center;
+            margin: 10px;
+          }
+          
+          .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #0ff;
+          }
+          
+          .metric-label {
+            font-size: 0.8em;
+            color: #888;
+          }
+        </style>
+        
+        <div class="quantum-dashboard">
+          <h2>🌌 Quantum Entanglement Control Center</h2>
+          
+          <div class="control-panel">
+            <div class="control-group">
+              <h3>Bell State Creation</h3>
+              <button class="button" onclick="createBellState('phi_plus')">|Φ⁺⟩</button>
+              <button class="button" onclick="createBellState('phi_minus')">|Φ⁻⟩</button>
+              <button class="button" onclick="createBellState('psi_plus')">|Ψ⁺⟩</button>
+              <button class="button" onclick="createBellState('psi_minus')">|Ψ⁻⟩</button>
+            </div>
+            
+            <div class="control-group">
+              <h3>Measurement Basis</h3>
+              <button class="button" onclick="measureBasis('z')">Z-basis</button>
+              <button class="button" onclick="measureBasis('x')">X-basis</button>
+              <button class="button" onclick="measureBasis('y')">Y-basis</button>
+              <button class="button" onclick="performBellTest()">Bell Test</button>
+            </div>
+          </div>
+          
+          <div class="quantum-state" id="state-display">
+            <h3>Current Quantum State</h3>
+            <div class="correlation-display">
+              <div class="bloch-sphere">
+                <div class="qubit-vector" id="qubit1"></div>
+                <p>Qubit 1</p>
+              </div>
+              <div style="position: relative; width: 100px;">
+                <div class="entanglement-line" style="width: 100px;"></div>
+              </div>
+              <div class="bloch-sphere">
+                <div class="qubit-vector" id="qubit2"></div>
+                <p>Qubit 2</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="metrics">
+            <div class="correlation-display">
+              <div class="metric">
+                <div class="metric-value" id="fidelity">100%</div>
+                <div class="metric-label">Fidelity</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="correlation">0.00</div>
+                <div class="metric-label">Correlation</div>
+              </div>
+              <div class="metric">
+                <div class="metric-value" id="bell-violation">0.00</div>
+                <div class="metric-label">Bell Violation</div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="results"></div>
+        </div>
+      `;
+      
+      window.createBellState = (state) => {
+        ctx.pushEvent("create_bell_state", { state: state });
+      };
+      
+      window.measureBasis = (basis) => {
+        ctx.pushEvent("measure", { basis: basis });
+      };
+      
+      window.performBellTest = () => {
+        ctx.pushEvent("bell_test", {});
+      };
+      
+      ctx.handleEvent("update_display", (data) => {
+        document.getElementById("fidelity").innerText = `${Math.round(data.fidelity * 100)}%`;
+        document.getElementById("correlation").innerText = data.correlation.toFixed(3);
+        document.getElementById("bell-violation").innerText = data.bell_violation.toFixed(3);
+        
+        if (data.message) {
+          document.getElementById("results").innerHTML = `<p>${data.message}</p>`;
+        }
+      });
+    }
+    """
+  end
+
+  def handle_event("create_bell_state", %{"state" => state}, ctx) do
+    bell_state = case state do
+      "phi_plus" -> QuantumEntanglement.EntangledPair.bell_state_phi_plus()
+      "phi_minus" -> QuantumEntanglement.EntangledPair.bell_state_phi_minus()
+      "psi_plus" -> QuantumEntanglement.EntangledPair.bell_state_psi_plus()
+      "psi_minus" -> QuantumEntanglement.EntangledPair.bell_state_psi_minus()
+    end
+    
+    # Store in correlation engine
+    QuantumCorrelationEngine.correlate_quantum_state(bell_state)
+    
+    # Evaluate performance
+    evaluation = QuantumSelfEvaluation.evaluate_quantum_state(%{
+      fidelity: 1.0,
+      purity: 1.0,
+      entanglement: 1.0,
+      measurements: [],
+      correlations: %{strength: 1.0}
+    })
+    
+    broadcast_update(ctx, %{
+      fidelity: evaluation.fidelity,
+      correlation: 1.0,
+      bell_violation: 0.0,
+      message: "Created Bell state: |#{state}⟩"
+    })
+    
+    {:noreply, ctx}
+  end
+
+  def handle_event("measure", %{"basis" => basis}, ctx) do
+    # Perform measurement
+    result = case basis do
+      "z" -> QuantumMeasurement.measure_z_basis(%{alpha: 1/:math.sqrt(2), beta: 1/:math.sqrt(2)})
+      "x" -> QuantumMeasurement.measure_x_basis(%{alpha: 1/:math.sqrt(2), beta: 1/:math.sqrt(2)})
+      "y" -> QuantumMeasurement.measure_y_basis(%{alpha: 1/:math.sqrt(2), beta: 1/:math.sqrt(2)})
+    end
+    
+    # Get correlation statistics
+    stats = QuantumCorrelationEngine.get_correlation_stats()
+    
+    broadcast_update(ctx, %{
+      fidelity: stats[:fidelity] || 0.95,
+      correlation: stats[:correlation] || 0.85,
+      bell_violation: stats[:bell_violation] || 0.0,
+      message: "Measured in #{String.upcase(basis)}-basis: #{if result.outcome == 0, do: "|0⟩", else: "|1⟩"}"
+    })
+    
+    {:noreply, ctx}
+  end
+
+  def handle_event("bell_test", _params, ctx) do
+    # Perform Bell inequality test
+    bell_results = QuantumCorrelationEngine.perform_bell_test()
+    
+    # Update visual feedback
+    QuantumSelfEvaluation.update_visual_feedback(%{
+      score: if(bell_results.violation_detected, do: 1.0, else: 0.5)
+    })
+    
+    message = if bell_results.violation_detected do
+      "🎉 Bell inequality violated! CHSH = #{Float.round(bell_results.chsh_value, 3)} > 2"
+    else
+      "📊 No Bell violation detected. CHSH = #{Float.round(bell_results.chsh_value, 3)}"
+    end
+    
+    broadcast_update(ctx, %{
+      fidelity: 0.95,
+      correlation: bell_results.max_correlation,
+      bell_violation: bell_results.chsh_value,
+      message: message
+    })
+    
+    {:noreply, ctx}
+  end
+  
+  defp broadcast_update(ctx, data) do
+    Kino.JS.broadcast(ctx, "update_display", data)
+  end
+end
+
+dashboard = QuantumDashboard.new()
+```
+
+## Real-Time Performance Visualization
+
+Let's create a real-time visualization of quantum system performance:
+
+```elixir
+defmodule PerformanceChart do
+  def create_chart() do
+    VegaLite.new(width: 600, height: 300, title: "Quantum System Performance")
+    |> VegaLite.mark(:line, point: true)
+    |> VegaLite.encode_field(:x, "time", type: :temporal, title: "Time")
+    |> VegaLite.encode_field(:y, "value", type: :quantitative, title: "Performance")
+    |> VegaLite.encode_field(:color, "metric", type: :nominal, title: "Metric")
+    |> Kino.VegaLite.new()
+  end
+  
+  def update_chart(chart, metrics) do
+    timestamp = DateTime.utc_now()
+    
+    Enum.each(metrics, fn {metric, value} ->
+      point = %{
+        time: timestamp,
+        value: value,
+        metric: Atom.to_string(metric)
+      }
+      Kino.VegaLite.push(chart, point)
+    end)
+  end
+end
+
+performance_chart = PerformanceChart.create_chart()
+
+# Start performance monitoring
+Task.start(fn ->
+  Stream.interval(1000)
+  |> Stream.each(fn _ ->
+    # Get current performance metrics
+    dashboard_data = QuantumSelfEvaluation.get_performance_dashboard()
+    
+    # Extract numeric values for charting
+    metrics = %{
+      fidelity: extract_percentage(dashboard_data.current_metrics.fidelity),
+      correlation: extract_percentage(dashboard_data.current_metrics.correlation_accuracy),
+      improvement_cycles: dashboard_data.learning_progress.improvement_cycles
+    }
+    
+    PerformanceChart.update_chart(performance_chart, metrics)
+  end)
+  |> Stream.run()
+end)
+
+defp extract_percentage(string) do
+  case Regex.run(~r/(\d+\.?\d*)%/, string) do
+    [_, value] -> String.to_float(value) / 100
+    _ -> 0.0
+  end
+end
+
+performance_chart
+```
+
+## Self-Improving Quantum Experiments
+
+Now let's demonstrate the self-improvement capabilities:
+
+```elixir
+defmodule QuantumExperiment do
+  def run_adaptive_experiment(iterations \\ 10) do
+    Enum.map(1..iterations, fn i ->
+      IO.puts("\n🔬 Experiment #{i}")
+      
+      # Create random quantum state
+      state = create_random_quantum_state()
+      
+      # Correlate and measure
+      QuantumCorrelationEngine.correlate_quantum_state(state)
+      
+      # Evaluate performance
+      evaluation = QuantumSelfEvaluation.evaluate_quantum_state(%{
+        fidelity: :rand.uniform(),
+        purity: :rand.uniform(),
+        entanglement: :rand.uniform(),
+        measurements: generate_random_measurements(),
+        correlations: %{strength: :rand.uniform()}
+      })
+      
+      # Check if improvement is needed
+      if evaluation.performance_score < 0.8 do
+        IO.puts("  📈 Triggering self-improvement...")
+        QuantumSelfEvaluation.trigger_self_improvement()
+      end
+      
+      IO.puts("  ✅ Performance: #{Float.round(evaluation.performance_score, 3)}")
+      IO.puts("  💡 Improvements: #{inspect(evaluation.improvements)}")
+      
+      # Small delay for visualization
+      Process.sleep(500)
+      
+      evaluation
+    end)
+  end
+  
+  defp create_random_quantum_state() do
+    # Create random superposition
+    theta = :rand.uniform() * :math.pi()
+    phi = :rand.uniform() * 2 * :math.pi()
+    
+    %{
+      qubit1: %{
+        alpha: :math.cos(theta/2),
+        beta: :math.sin(theta/2) * :math.exp(phi * 1.0i)
+      },
+      qubit2: %{
+        alpha: :math.sin(theta/2),
+        beta: -:math.cos(theta/2) * :math.exp(phi * 1.0i)
+      }
+    }
+  end
+  
+  defp generate_random_measurements() do
+    Enum.map(1..10, fn _ ->
+      %{
+        basis: Enum.random([:z, :x, :y]),
+        outcome: Enum.random([0, 1]),
+        confidence: :rand.uniform()
+      }
+    end)
+  end
+end
+
+# Run adaptive experiments
+results = QuantumExperiment.run_adaptive_experiment(5)
+
+# Show improvement over time
+improvement_trend = results
+|> Enum.with_index(1)
+|> Enum.map(fn {eval, i} -> 
+  %{
+    experiment: i,
+    performance: eval.performance_score,
+    fidelity: eval.fidelity
+  }
+end)
+
+Kino.DataTable.new(improvement_trend)
+```
+
+## Interactive Quantum Circuit Builder
+
+Create quantum circuits interactively:
+
+````elixir
+defmodule QuantumCircuitBuilder do
+  def create_form() do
+    form = Kino.Control.form(
+      [
+        qubit_count: Kino.Input.number("Number of Qubits", default: 2),
+        initial_state: Kino.Input.select("Initial State", 
+          options: [
+            {"Superposition", :superposition},
+            {"Bell State", :bell},
+            {"GHZ State", :ghz},
+            {"W State", :w}
+          ]
+        ),
+        operations: Kino.Input.select("Operations", 
+          options: [
+            {"Hadamard", :h},
+            {"Pauli-X", :x},
+            {"Pauli-Y", :y},
+            {"Pauli-Z", :z},
+            {"CNOT", :cnot},
+            {"Phase", :phase}
+          ],
+          multiple: true
+        ),
+        measurement_basis: Kino.Input.select("Measurement Basis", 
+          options: [
+            {"Computational (Z)", :z},
+            {"Hadamard (X)", :x},
+            {"Y-basis", :y}
+          ]
+        )
+      ],
+      submit: "Run Circuit"
+    )
+    
+    frame = Kino.Frame.new()
+    
+    Kino.listen(form, fn event ->
+      result = execute_quantum_circuit(event.data)
+      Kino.Frame.render(frame, format_circuit_result(result))
+    end)
+    
+    Kino.Layout.grid([form, frame], columns: 1)
+  end
+  
+  defp execute_quantum_circuit(params) do
+    # Create initial state
+    state = case params.initial_state do
+      :superposition -> create_superposition_state(params.qubit_count)
+      :bell -> QuantumEntanglement.EntangledPair.bell_state_phi_plus()
+      :ghz -> create_ghz_state(params.qubit_count)
+      :w -> create_w_state(params.qubit_count)
+    end
+    
+    # Apply operations
+    final_state = Enum.reduce(params.operations || [], state, fn op, acc ->
+      apply_operation(acc, op)
+    end)
+    
+    # Measure in specified basis
+    measurement = perform_measurement(final_state, params.measurement_basis)
+    
+    %{
+      initial_state: params.initial_state,
+      operations: params.operations || [],
+      final_state: final_state,
+      measurement: measurement
+    }
+  end
+  
+  defp create_superposition_state(n) do
+    %{qubits: Enum.map(1..n, fn _ -> %{alpha: 1/:math.sqrt(2), beta: 1/:math.sqrt(2)} end)}
+  end
+  
+  defp create_ghz_state(n) do
+    %{
+      amplitude_all_zeros: 1/:math.sqrt(2),
+      amplitude_all_ones: 1/:math.sqrt(2),
+      qubit_count: n
+    }
+  end
+  
+  defp create_w_state(n) do
+    %{
+      superposition_type: :w_state,
+      qubit_count: n,
+      amplitude: 1/:math.sqrt(n)
+    }
+  end
+  
+  defp apply_operation(state, :h) do
+    # Hadamard operation
+    Map.update(state, :hadamard_applied, true, fn _ -> true end)
+  end
+  
+  defp apply_operation(state, _op) do
+    # Simplified - just mark operation as applied
+    Map.update(state, :operations_applied, 1, &(&1 + 1))
+  end
+  
+  defp perform_measurement(state, basis) do
+    %{
+      basis: basis,
+      outcome: :rand.uniform(2) - 1,
+      probability: :rand.uniform()
+    }
+  end
+  
+  defp format_circuit_result(result) do
+    """
+    ### Quantum Circuit Execution Result
+    
+    **Initial State:** #{result.initial_state}
+    
+    **Operations Applied:** #{Enum.join(result.operations, " → ")}
+    
+    **Measurement:**
+    - Basis: #{result.measurement.basis}
+    - Outcome: |#{result.measurement.outcome}⟩
+    - Probability: #{Float.round(result.measurement.probability, 3)}
+    
+    **Visual Representation:**
+    ```
+    |ψ⟩ ─#{Enum.map(result.operations, &op_symbol/1) |> Enum.join("─")}─ M(#{result.measurement.basis})
+    ```
+    """
+    |> Kino.Markdown.new()
+  end
+  
+  defp op_symbol(:h), do: "H"
+  defp op_symbol(:x), do: "X"
+  defp op_symbol(:y), do: "Y"
+  defp op_symbol(:z), do: "Z"
+  defp op_symbol(:cnot), do: "●─⊕"
+  defp op_symbol(:phase), do: "S"
+  defp op_symbol(_), do: "?"
+end
+
+QuantumCircuitBuilder.create_form()
+````
+
+This interactive demo showcases:
+
+1. **Real-time Quantum State Visualization** - See entangled states and their evolution
+2. **Self-Improving Performance** - Watch the system optimize itself over time
+3. **Interactive Controls** - Create and manipulate quantum states with buttons
+4. **Bell Inequality Testing** - Verify quantum entanglement through Bell tests
+5. **Performance Monitoring** - Track fidelity, correlation, and learning progress
+
+The visual reinforcement system provides immediate feedback, making quantum concepts more intuitive and engaging!
+
+### Key Features Demonstrated:
+
+* 🌌 Interactive quantum state creation
+* 📊 Real-time performance metrics
+* 🔄 Adaptive learning and self-improvement
+* 🎯 Visual feedback for quantum operations
+* 📈 Performance trending and analysis
+
+Experiment with different quantum states and watch how the system learns and improves!

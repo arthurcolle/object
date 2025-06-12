@@ -8,13 +8,9 @@ This file contains machine-verified proofs of emergence criteria, quantification
 and fundamental theorems about collective intelligence formation.
 -/
 
-import Mathlib.Analysis.Normed.Field.Basic
 import Mathlib.Data.Real.Basic
-import Mathlib.Topology.Basic
-import Mathlib.MeasureTheory.Measure.MeasureSpace
-import Mathlib.Probability.ProbabilityMassFunction
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.LinearAlgebra.Matrix.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 import AAOSProofs.Basic
 
 -- Computational Emergence Theory for AAOS

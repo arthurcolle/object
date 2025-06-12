@@ -1,18 +1,75 @@
-# AAOS Performance Baselines and Benchmarks
+# AAOS Performance Baselines and Benchmarks: Mathematical Analysis and Statistical Validation
+
+> **Related Documentation**: [README](README.md) | [System Report](AAOS_SYSTEM_REPORT.md) | [Mathematical Foundations](MATHEMATICS_OF_AUTONOMOUS_AGENCY.md) | [Architecture](ARCHITECTURE_OF_AUTONOMOUS_AGENCY.md) | [Engineering Guide](ENGINEERING_AND_DEPLOYMENT_OF_AUTONOMOUS_AGENCY_AS_DISTRIBUTED_SYSTEM.md)
 
 ## Executive Summary
 
-This document establishes comprehensive baselines for the Autonomous AI Object System (AAOS), providing empirical performance measurements, comparative analysis against existing systems, and reproducible benchmarking methodologies.
+This document establishes mathematically rigorous baselines for the Autonomous AI Object System (AAOS), providing empirical performance measurements with statistical validation, comparative analysis using formal hypothesis testing, and reproducible benchmarking methodologies grounded in experimental design theory. All performance claims are supported by confidence intervals, effect size calculations, and statistical significance testing.
 
 ## Table of Contents
 
-1. [Performance Baselines](#performance-baselines)
-2. [Comparative Analysis](#comparative-analysis)
-3. [Learning Algorithm Baselines](#learning-algorithm-baselines)
-4. [Scalability Baselines](#scalability-baselines)
-5. [Fault Tolerance Baselines](#fault-tolerance-baselines)
-6. [Methodology](#methodology)
-7. [Reproducibility](#reproducibility)
+1. [Mathematical Framework](#mathematical-framework)
+2. [Statistical Methodology](#statistical-methodology)
+3. [Performance Baselines with Statistical Analysis](#performance-baselines-with-statistical-analysis)
+4. [Comparative Analysis with Hypothesis Testing](#comparative-analysis-with-hypothesis-testing)
+5. [Learning Algorithm Baselines with Convergence Theory](#learning-algorithm-baselines-with-convergence-theory)
+6. [Scalability Baselines with Complexity Analysis](#scalability-baselines-with-complexity-analysis)
+7. [Fault Tolerance Baselines with Reliability Theory](#fault-tolerance-baselines-with-reliability-theory)
+8. [Regression Analysis and Predictive Modeling](#regression-analysis-and-predictive-modeling)
+9. [Error Analysis and Confidence Intervals](#error-analysis-and-confidence-intervals)
+10. [Experimental Design and Validation](#experimental-design-and-validation)
+11. [Methodology](#methodology)
+12. [Reproducibility](#reproducibility)
+
+## Mathematical Framework
+
+### 1.1 Performance Metric Definitions
+
+Let $\mathcal{S} = \{s_1, s_2, \ldots, s_n\}$ be the system state space and $\mathcal{A} = \{a_1, a_2, \ldots, a_m\}$ be the action space. We define the following mathematical foundations:
+
+**Definition 1.1 (Throughput Function)**: The throughput $T(t)$ at time $t$ is defined as:
+$$T(t) = \lim_{\Delta t \to 0} \frac{N(t + \Delta t) - N(t)}{\Delta t}$$
+where $N(t)$ is the cumulative number of processed messages at time $t$.
+
+**Definition 1.2 (Latency Distribution)**: The latency $L$ follows a distribution with CDF $F_L(x) = P(L \leq x)$, and we define percentiles as:
+$$L_{p} = F_L^{-1}(p/100)$$
+
+**Definition 1.3 (Performance Efficiency)**: For a system with $k$ nodes, the efficiency is:
+$$\eta_k = \frac{T_k}{k \cdot T_1}$$
+where $T_k$ is the throughput with $k$ nodes and $T_1$ is single-node throughput.
+
+### 1.2 Learning Performance Metrics
+
+**Definition 1.4 (Sample Complexity)**: The sample complexity $S_\epsilon(\delta)$ is the minimum number of samples required to achieve $\epsilon$-optimal policy with probability $1-\delta$:
+$$S_\epsilon(\delta) = \min\{n : P(|V^*(s) - V^n(s)| \leq \epsilon, \forall s \in \mathcal{S}) \geq 1-\delta\}$$
+
+**Definition 1.5 (Convergence Rate)**: The convergence rate $\rho$ is defined as:
+$$\rho = \lim_{n \to \infty} \sup_{s \in \mathcal{S}} \frac{|V^{n+1}(s) - V^*(s)|}{|V^n(s) - V^*(s)|}$$
+
+## Statistical Methodology
+
+### 2.1 Hypothesis Testing Framework
+
+For all comparative analyses, we employ the following statistical framework:
+
+**Null Hypothesis**: $H_0: \mu_{\text{AAOS}} = \mu_{\text{baseline}}$
+**Alternative Hypothesis**: $H_1: \mu_{\text{AAOS}} > \mu_{\text{baseline}}$ (one-tailed test for performance improvements)
+
+**Test Statistic**: For non-parametric comparisons, we use the Mann-Whitney U statistic:
+$$U = \sum_{i=1}^{n_1} \sum_{j=1}^{n_2} I(X_i > Y_j)$$
+where $I(\cdot)$ is the indicator function.
+
+**Effect Size**: Cohen's d for standardized effect size:
+$$d = \frac{\bar{X}_1 - \bar{X}_2}{\sqrt{\frac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1+n_2-2}}}$$
+
+### 2.2 Confidence Interval Construction
+
+**Bootstrap Confidence Intervals**: For non-parametric metrics, we use bias-corrected and accelerated (BCa) bootstrap:
+$$\text{CI}_{1-\alpha} = [\hat{\theta}_{(\alpha_1)}, \hat{\theta}_{(\alpha_2)}]$$
+where $\alpha_1 = \Phi(\hat{z}_0 + \frac{\hat{z}_0 + z_{\alpha/2}}{1 - \hat{a}(\hat{z}_0 + z_{\alpha/2})})$ and $\alpha_2 = \Phi(\hat{z}_0 + \frac{\hat{z}_0 + z_{1-\alpha/2}}{1 - \hat{a}(\hat{z}_0 + z_{1-\alpha/2})})$
+
+**Parametric Confidence Intervals**: For normally distributed metrics:
+$$\text{CI}_{1-\alpha} = \bar{x} \pm t_{\alpha/2,n-1} \frac{s}{\sqrt{n}}$$
 
 ## Performance Baselines
 

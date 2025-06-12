@@ -3,13 +3,9 @@ AAOS Social Learning and Coalition Formation
 Formal verification of multi-agent coordination and learning dynamics
 -/
 
-import Mathlib.Data.Set.Basic
-import Mathlib.Data.Set.Finite
 import Mathlib.Data.Real.Basic
-import Mathlib.Logic.Basic
-import Mathlib.Order.Basic
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Probability.Notation
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOS.SocialLearning
 

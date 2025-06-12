@@ -5,9 +5,9 @@
   in the OORL framework, with both standard and natural gradient approaches.
 -/
 
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.Analysis.Calculus.Deriv.Basic
-import Mathlib.Data.Real.NNReal
+import Mathlib.Data.Real.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Tactic
 
 namespace AAOSProofs.Convergence.PolicyGradient
 
